@@ -1,6 +1,6 @@
 # JVM Dungeon Crawler
 
-Contains an asset converter to parse veloren .ron files into .json files. See RonConverter.java
+Contains an asset converter to parse veloren .ron files into .json files. See Converter.java
 
 ## Acknowledgments & Assets
 

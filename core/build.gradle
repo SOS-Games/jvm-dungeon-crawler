@@ -18,7 +18,7 @@ tasks.register('converter', JavaExec) {
   group = 'jvm-dungeon-crawler'
   description = 'Print all RON files from Veloren directory (see :core:converter --args="help")'
   classpath = sourceSets.main.runtimeClasspath
-  mainClass = 'io.github.jvmdc.converter.RonConverter'
+  mainClass = 'io.github.jvmdc.converter.Converter'
   workingDir = rootProject.projectDir
 }
 

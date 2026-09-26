@@ -1,9 +1,10 @@
 package io.github.jvmdc.converter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.Writer;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.Properties;
@@ -16,22 +17,17 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonString;
 import com.badlogic.gdx.utils.JsonWriter.OutputType;
+import java.util.stream.Collectors;
 
 // must first run:
 // gradlew.bat :core:generateGrammarSource
 // then you can run this:
 // gradlew.bat :core:converter --args="help"
-public class RonConverter {
+public class Converter {
 
     public static void main(String[] args) {
         Properties p = getLocalPropeties();
-
-
-        //convertAsset(p);
         getRonFiles(p);
-
-        
-        
     }
 
     // velorenAssetPath should start with /assets
@@ -42,7 +38,6 @@ public class RonConverter {
 
         try {
             Path relativeAssetPath = velorenAssetPath.relativize(ronAbsolutePath); // get paths starting one layer at /assets
-            //System.out.println(relativeAssetPath); 
 
             RonLexer lexer = new RonLexer(CharStreams.fromPath(ronAbsolutePath));
             CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -57,7 +52,6 @@ public class RonConverter {
             Json js = new Json();
             js.setOutputType(OutputType.json);
             String formattedContents = js.prettyPrint(j.toString());
-            //System.out.println(formattedContents);
 
             // create directory structure and asset file inside of it
             Path directoryStructure = relativeAssetPath.getParent();
@@ -65,12 +59,10 @@ public class RonConverter {
 
             // convert extension from .ron to .json
             String jsonFileName = relativeAssetPath.getFileName().toString().split("[.]")[0] + ".json";
-            //System.out.println(jsonFileName);
             Path jsonPath = Path.of(jsonFileName);
 
             // append jsonPath to directoryStructure
             Path jsonAssetPath = directoryStructure.resolve(jsonPath);
-            //System.out.println(jsonAssetPath.toString());
 
             if (!Files.exists(jsonAssetPath)) {
                 Files.createFile(jsonAssetPath);
@@ -104,16 +96,48 @@ public class RonConverter {
         List<Path> ronAbsolutePaths = new ArrayList<Path>();
 
         try {
+            /*
+            File swordFile = new File(velorenPathString + "/assets/voxygen/voxel/weapon/sword/starter.vox");
+            
+            VoxReader.VoxData voxData = VoxReader.read(swordFile);
+
+            System.out.println("Dimensions: " + voxData.sizeX + "x" + voxData.sizeY + "x" + voxData.sizeZ);
+            // Count how many non-empty voxels exist
+            int solidCount = 0;
+            for (int x = 0; x < voxData.sizeX; x++) {
+                for (int y = 0; y < voxData.sizeY; y++) {
+                    for (int z = 0; z < voxData.sizeZ; z++) {
+                        if (voxData.grid[x][y][z] != 0) solidCount++;
+                    }
+                }
+            }
+            System.out.println("Solid voxels: " + solidCount);
+            System.out.println("Palette Color #1: 0x" + Integer.toHexString(voxData.palette[0]));
+            */
+
+
+
+
+
             Files.walk(velorenAssetPath)
                 .filter(path -> path.toString().endsWith(".ron"))
                 .forEach(path -> ronAbsolutePaths.add(path));
+
+            // also note these existing file types:
+            //[ron, canary, vox, ogg, jpg, png, ttf, txt, ftl, md, obj, ico, desktop, xml, glsl, frag, vert, bin]
+            /*
+            List<String> uniqueExtensions = Files.walk(velorenAssetPath)
+                .map(path -> path.getFileName().toString().split("[.]"))
+                .filter(parts -> parts.length > 1)
+                .map(parts -> parts[parts.length - 1])
+                .distinct()
+                .collect(Collectors.toList());
+            System.out.println(uniqueExtensions);
+            */
         } catch (IOException e) {
         }
 
-        //ronAbsolutePaths.stream().forEach(path -> System.out.println(path));
-        //ronAbsolutePaths.stream().forEach(path -> System.out.println(velorenAssetPath.relativize(path)));
         ronAbsolutePaths.stream().forEach(path -> convertAsset(path, Path.of(velorenPathString)));
-        //convertAsset(ronAbsolutePaths.get(0), Path.of(velorenPathString));
     }
 
 

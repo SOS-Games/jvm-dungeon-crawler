@@ -150,10 +150,27 @@ public class RonToJsonVisitor extends RonBaseVisitor<String> {
         if ("None".equals(text)) {
             return "null";
         }
-        if ("true".equals(text) || "false".equals(text) || text.startsWith("\"") || isNumber(text)) {
+        if ("true".equals(text) || "false".equals(text) || text.startsWith("\"")) {
             return text;
         }
-        // Unquoted Rust enum/symbol (e.g. Back, Low, Sword) -> wrap in quotes for valid JSON
+
+        // Normalize leading-dot decimals: ".45" -> "0.45", "-.45" -> "-0.45"
+        if (text.startsWith(".")) {
+            text = "0" + text;
+        } else if (text.startsWith("-.")) {
+            text = "-0." + text.substring(2);
+        }
+
+        // Normalize trailing-dot decimals: "-130." -> "-130.0", "130." -> "130.0"
+        if (text.endsWith(".")) {
+            text = text + "0";
+        }
+
+        if (isNumber(text)) {
+            return text;
+        }
+
+        // Unquoted Rust enum/symbol (e.g. Two, Back, Sword) -> wrap in quotes
         if (Character.isLetter(text.charAt(0)) || text.charAt(0) == '_') {
             return "\"" + text + "\"";
         }
@@ -162,7 +179,7 @@ public class RonToJsonVisitor extends RonBaseVisitor<String> {
     }
 
     private boolean isNumber(String s) {
-        return s.matches("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
+        return s.matches("-?(\\d+(\\.\\d*)?|\\.\\d+)([eE][+-]?\\d+)?");
     }
 
     @Override

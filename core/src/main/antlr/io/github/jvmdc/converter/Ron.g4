@@ -87,7 +87,7 @@ mapitem
 
 // Supports optional negative signs, floats, and scientific notation (e.g. -10, -2.5, 1e-4)
 DECIMAL
-    : '-'? [0-9]+ ('.' [0-9]+)? ([eE] [+-]? [0-9]+)?
+    : '-'? ( [0-9]+ ('.' [0-9]*)? | '.' [0-9]+ ) ([eE] [+-]? [0-9]+)?
     ;
 
 HEX
