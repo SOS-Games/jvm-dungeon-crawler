@@ -10,8 +10,8 @@ import com.badlogic.gdx.math.Matrix4;
 
 /**
  * Draws voxel meshes. A browser tile and the large view use the same shader:
- * palette colors and one directional light. The model matrix is how the large
- * view spins a mesh when the mouse drags.
+ * palette colors, one directional light, and full-bright spots for glowing
+ * voxels. The model matrix is how the large view spins a mesh when the mouse drags.
  */
 public final class ForwardRenderer {
     private final ShaderProgram shader;
@@ -100,8 +100,11 @@ public final class ForwardRenderer {
             vec3 n = normalize(v_normal);
             vec3 light = normalize(vec3(0.35, 0.85, 0.45));
             float ndl = max(dot(n, light), 0.0);
-            vec3 color = v_color.rgb * (0.32 + 0.68 * ndl);
-            frag = vec4(color, 1.0);
+            float shade = 0.32 + 0.68 * ndl;
+            // Alpha is 1 on palette slots 13-15. Those stay lit and add their own light.
+            vec3 color = v_color.rgb * mix(shade, 1.0, v_color.a);
+            color += v_color.rgb * v_color.a;
+            frag = vec4(min(color, vec3(1.0)), 1.0);
         }
         """;
 }

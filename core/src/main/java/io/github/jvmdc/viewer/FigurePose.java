@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * Rest pose for a small biped, in voxel units. These numbers are the idle
  * bone positions for that body only (myrmidon, gnome, and the other small
- * bipeds). Other creatures, such as a bear or an akhlut, are not in this table.
+ * bipeds). Bears, birds, and the other animals are in AnimalPose.
  */
 final class FigurePose {
     private static final Map<String, Attr> SPECIES = new HashMap<>();
@@ -88,6 +88,14 @@ final class FigurePose {
 
     /** Voxel-space position of a bone. x is right, y is forward, z is up. */
     static float[] bone(String species, String bone, boolean left) {
+        float[] large = LargePose.bone(species, bone);
+        if (large != null) {
+            return large;
+        }
+        float[] animal = AnimalPose.bone(species, bone);
+        if (animal != null) {
+            return animal;
+        }
         Attr attr = SPECIES.getOrDefault(species, SPECIES.get("myrmidon"));
         float chestY = attr.chestY;
         float chestZ = attr.chestZ;

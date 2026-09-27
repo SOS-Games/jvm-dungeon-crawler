@@ -12,7 +12,8 @@ import java.util.List;
 
 /**
  * Turns a voxel scene into triangle meshes. Hidden faces are dropped. A model
- * that does not fit in 16-bit indices is split into several meshes.
+ * that does not fit in 16-bit indices is split into several meshes. Palette
+ * slots 13 to 15 are marked glowing in the color alpha. Slot 16 is a hole.
  */
 public class VoxMesher {
 
@@ -111,7 +112,7 @@ public class VoxMesher {
                 for (int y = 0; y < sizeY; y++) {
                     for (int z = 0; z < sizeZ; z++) {
                         byte colIdx = grid[x][y][z];
-                        if (colIdx == 0) {
+                        if (!occupied(colIdx)) {
                             continue;
                         }
                         int paletteIndex = (colIdx & 0xFF) - 1;
@@ -123,29 +124,29 @@ public class VoxMesher {
                                 ((rgba >> 24) & 0xFF) / 255f,
                                 ((rgba >> 16) & 0xFF) / 255f,
                                 ((rgba >> 8) & 0xFF) / 255f,
-                                1f
+                                glows(colIdx) ? 1f : 0f
                         );
-                        if (z + 1 >= sizeZ || grid[x][y][z + 1] == 0) {
+                        if (z + 1 >= sizeZ || !occupied(grid[x][y][z + 1])) {
                             addQuad(model, rotation, translation, packedColor,
                                     x, y, z + 1, x + 1, y, z + 1, x + 1, y + 1, z + 1, x, y + 1, z + 1);
                         }
-                        if (z - 1 < 0 || grid[x][y][z - 1] == 0) {
+                        if (z - 1 < 0 || !occupied(grid[x][y][z - 1])) {
                             addQuad(model, rotation, translation, packedColor,
                                     x, y + 1, z, x + 1, y + 1, z, x + 1, y, z, x, y, z);
                         }
-                        if (x + 1 >= sizeX || grid[x + 1][y][z] == 0) {
+                        if (x + 1 >= sizeX || !occupied(grid[x + 1][y][z])) {
                             addQuad(model, rotation, translation, packedColor,
                                     x + 1, y, z, x + 1, y + 1, z, x + 1, y + 1, z + 1, x + 1, y, z + 1);
                         }
-                        if (x - 1 < 0 || grid[x - 1][y][z] == 0) {
+                        if (x - 1 < 0 || !occupied(grid[x - 1][y][z])) {
                             addQuad(model, rotation, translation, packedColor,
                                     x, y + 1, z, x, y, z, x, y, z + 1, x, y + 1, z + 1);
                         }
-                        if (y - 1 < 0 || grid[x][y - 1][z] == 0) {
+                        if (y - 1 < 0 || !occupied(grid[x][y - 1][z])) {
                             addQuad(model, rotation, translation, packedColor,
                                     x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1);
                         }
-                        if (y + 1 >= sizeY || grid[x][y + 1][z] == 0) {
+                        if (y + 1 >= sizeY || !occupied(grid[x][y + 1][z])) {
                             addQuad(model, rotation, translation, packedColor,
                                     x + 1, y + 1, z, x, y + 1, z, x, y + 1, z + 1, x + 1, y + 1, z + 1);
                         }
@@ -245,6 +246,18 @@ public class VoxMesher {
             maxX = Math.max(maxX, p[0]);
             maxY = Math.max(maxY, p[1]);
             maxZ = Math.max(maxZ, p[2]);
+        }
+
+        /** Empty air and palette slot 16 (a hollow cell) do not hide a face. */
+        private static boolean occupied(byte index) {
+            int slot = index & 0xFF;
+            return slot != 0 && slot != 16;
+        }
+
+        /** Palette slots 13, 14, and 15 are the glowing voxels. */
+        private static boolean glows(byte index) {
+            int slot = index & 0xFF;
+            return slot >= 13 && slot <= 15;
         }
 
         private void put(float[] p, float nx, float ny, float nz, float color) {

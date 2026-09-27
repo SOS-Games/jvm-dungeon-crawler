@@ -14,11 +14,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Small biped NPCs such as the myrmidon marksman store a head, chest, hands,
- * and feet as separate files. The converted armor JSON says where each piece
- * sits, and the idle pose stacks those bones into one body.
+ * NPCs and animals are stored as separate voxel parts. The converted manifests
+ * say which file each bone uses, and the idle pose stacks those bones into one body.
  */
 final class NpcFigure {
     static final class Part {
@@ -29,13 +29,20 @@ final class NpcFigure {
         final boolean left;
         /** Held weapon kind, such as Bow. Null for armor parts. */
         final String tool;
+        /** Which model inside the file. Most parts are model 0. */
+        final int model;
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left) {
-            this(file, ox, oy, oz, mirror, bone, left, null);
+            this(file, ox, oy, oz, mirror, bone, left, null, 0);
         }
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
              String tool) {
+            this(file, ox, oy, oz, mirror, bone, left, tool, 0);
+        }
+
+        Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
+             String tool, int model) {
             this.file = file;
             this.ox = ox;
             this.oy = oy;
@@ -44,6 +51,7 @@ final class NpcFigure {
             this.bone = bone;
             this.left = left;
             this.tool = tool;
+            this.model = model;
         }
     }
 
@@ -109,7 +117,183 @@ final class NpcFigure {
                     species,
                     parts));
         }
+        assemblies.addAll(largeBipeds(assetsRoot));
+        assemblies.addAll(animals(assetsRoot));
         return assemblies;
+    }
+
+    /**
+     * Ogres, trolls, and the other big bipeds. Each body is one central manifest
+     * entry plus the matching lateral entry.
+     */
+    private static List<Assembly> largeBipeds(Path assetsRoot) throws IOException {
+        Path centralFile = jsonManifest("biped_large_central_manifest.json");
+        Path lateralFile = jsonManifest("biped_large_lateral_manifest.json");
+        if (!Files.isRegularFile(centralFile) || !Files.isRegularFile(lateralFile)) {
+            return List.of();
+        }
+        JsonValue central = unwrap(parse(centralFile));
+        JsonValue lateral = unwrap(parse(lateralFile));
+        List<Assembly> assemblies = new ArrayList<>();
+        if (central == null) {
+            return assemblies;
+        }
+        for (JsonValue body = central.child; body != null; body = body.next) {
+            String key = body.name();
+            int comma = key.indexOf(',');
+            if (!key.startsWith("(") || comma < 0 || !key.endsWith(")")) {
+                continue;
+            }
+            String rust = key.substring(1, comma);
+            String sex = key.substring(comma + 1, key.length() - 1).toLowerCase();
+            String pose = "Ogre".equals(rust) ? "ogre/" + sex : rust.toLowerCase();
+            List<Part> parts = new ArrayList<>();
+            addLargePieces(body, assetsRoot, parts, true, null);
+            JsonValue side = lateral == null ? null : lateral.get(key);
+            if (side != null) {
+                addLargePieces(side, assetsRoot, parts, false, null);
+            }
+            if (parts.size() < 2) {
+                continue;
+            }
+            String folder = npcFolder(parts.get(0).file, assetsRoot);
+            String label = rust.replaceAll("([a-z])([A-Z])", "$1 $2").toLowerCase() + " " + sex;
+            assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder, pose, parts));
+        }
+        return assemblies;
+    }
+
+    /**
+     * Bears, birds, fish, and the other animals. Same manifests as the big bipeds,
+     * with a left-side mirror where the mesh file is the right limb flipped.
+     */
+    private static List<Assembly> animals(Path assetsRoot) throws IOException {
+        String[][] manifests = {
+                {"quadruped_medium_central_manifest.json", "quadruped_medium_lateral_manifest.json", "qm"},
+                {"quadruped_small_central_manifest.json", "quadruped_small_lateral_manifest.json", "qs"},
+                {"quadruped_low_central_manifest.json", "quadruped_low_lateral_manifest.json", "low"},
+                {"theropod_central_manifest.json", "theropod_lateral_manifest.json", "th"},
+                {"bird_medium_central_manifest.json", "bird_medium_lateral_manifest.json", "bm"},
+                {"bird_large_central_manifest.json", "bird_large_lateral_manifest.json", "bl"},
+                {"fish_small_central_manifest.json", "fish_small_lateral_manifest.json", "fish"},
+                {"fish_medium_central_manifest.json", "fish_medium_lateral_manifest.json", "fish"},
+                {"dragon_central_manifest.json", "dragon_lateral_manifest.json", "none"},
+                {"arthropod_central_manifest.json", "arthropod_lateral_manifest.json", "ar"},
+                {"crustacean_central_manifest.json", "crustacean_lateral_manifest.json", "bool"},
+        };
+        List<Assembly> assemblies = new ArrayList<>();
+        for (String[] pair : manifests) {
+            Path centralFile = jsonManifest(pair[0]);
+            if (!Files.isRegularFile(centralFile)) {
+                continue;
+            }
+            JsonValue central = unwrap(parse(centralFile));
+            if (central == null) {
+                continue;
+            }
+            Path lateralFile = jsonManifest(pair[1]);
+            JsonValue lateral = Files.isRegularFile(lateralFile) ? unwrap(parse(lateralFile)) : null;
+            String mode = "none".equals(pair[2]) ? null : pair[2];
+            for (JsonValue body = central.child; body != null; body = body.next) {
+                String key = body.name();
+                int comma = key.indexOf(',');
+                if (!key.startsWith("(") || comma < 0 || !key.endsWith(")")) {
+                    continue;
+                }
+                String rust = key.substring(1, comma);
+                String sex = key.substring(comma + 1, key.length() - 1).toLowerCase();
+                List<Part> parts = new ArrayList<>();
+                addLargePieces(body, assetsRoot, parts, true, mode);
+                JsonValue side = lateral == null ? null : lateral.get(key);
+                if (side != null) {
+                    addLargePieces(side, assetsRoot, parts, false, mode);
+                }
+                if (parts.size() < 2) {
+                    continue;
+                }
+                String folder = npcFolder(parts.get(0).file, assetsRoot);
+                String label = rust.replaceAll("([a-z])([A-Z])", "$1 $2").toLowerCase() + " " + sex;
+                assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder,
+                        rust.toLowerCase() + "/" + sex, parts));
+            }
+        }
+        return assemblies;
+    }
+
+    private static final Map<String, Set<String>> FLIP = Map.of(
+            "qm", Set.of("leg_fl", "leg_bl", "foot_fl", "foot_bl"),
+            "qs", Set.of("left_front", "left_back"),
+            "th", Set.of("hand_l", "leg_l", "foot_l"),
+            "bm", Set.of("wing_in_l", "wing_out_l", "leg_l"),
+            "bl", Set.of("wing_in_l", "wing_mid_l", "wing_out_l", "leg_l", "foot_l"),
+            "fish", Set.of("fin_l"),
+            "ar", Set.of("mandible_l", "wing_fl", "wing_bl", "leg_fl", "leg_fcl", "leg_bcl", "leg_bl"));
+
+    private static void addLargePieces(JsonValue body, Path assetsRoot, List<Part> parts,
+                                       boolean central, String flipMode) {
+        for (JsonValue bone = body.child; bone != null; bone = bone.next) {
+            if ("second".equals(bone.name())) {
+                continue;
+            }
+            JsonValue spec = bone.get(central ? "central" : "lateral");
+            if (spec == null) {
+                continue;
+            }
+            String name = spec.isArray() ? spec.getString(0) : spec.asString();
+            if (name == null || name.startsWith("armor.") || !name.startsWith("npc.")) {
+                continue;
+            }
+            JsonValue offset = bone.get("offset");
+            if (offset == null || offset.size < 3) {
+                continue;
+            }
+            int model = bone.has("model_index") ? bone.getInt("model_index") : 0;
+            String dotted = name.substring("npc.".length());
+            int cut = dotted.lastIndexOf('.');
+            if (cut <= 0) {
+                continue;
+            }
+            Path vox = assetsRoot.resolve("voxygen/voxel/npc/" + dotted.substring(0, cut).replace('.', '/')
+                    + "/" + dotted.substring(cut + 1) + ".vox");
+            if (!Files.isRegularFile(vox)) {
+                continue;
+            }
+            parts.add(new Part(vox, offset.getFloat(0), offset.getFloat(1), offset.getFloat(2),
+                    mirrored(bone.name(), spec, flipMode), bone.name(), false, null, model));
+        }
+    }
+
+    /** Left limbs often reuse the right mesh, flipped. Quadruped-low stores that flag in the file. */
+    private static boolean mirrored(String bone, JsonValue spec, String flipMode) {
+        if (flipMode == null) {
+            return false;
+        }
+        boolean present = spec.isArray() && spec.size >= 2 && spec.get(1).isBoolean();
+        boolean flag = present && spec.get(1).asBoolean();
+        if ("low".equals(flipMode)) {
+            if (!present) {
+                return false;
+            }
+            if ("front_left".equals(bone) || "back_left".equals(bone)) {
+                return !flag;
+            }
+            return flag;
+        }
+        if ("bool".equals(flipMode)) {
+            return flag;
+        }
+        Set<String> names = FLIP.get(flipMode);
+        return names != null && names.contains(bone);
+    }
+
+    private static String npcFolder(Path file, Path assetsRoot) {
+        Path npc = assetsRoot.resolve("voxygen/voxel/npc");
+        Path parent = npc.relativize(file.getParent());
+        return parent.toString().replace('\\', '/');
+    }
+
+    private static JsonValue unwrap(JsonValue root) {
+        return root != null && root.isArray() ? root.child : root;
     }
 
     static VoxMesher.VoxMesh build(Assembly assembly) throws IOException {
@@ -123,14 +307,14 @@ final class NpcFigure {
         VoxReader.VoxScene combined = new VoxReader.VoxScene();
         for (Part part : assembly.parts) {
             VoxReader.VoxScene scene = VoxReader.readScene(part.file.toFile());
-            if (scene.models.isEmpty() || scene.models.get(0).grid == null) {
+            if (scene.models.size() <= part.model || scene.models.get(part.model).grid == null) {
                 continue;
             }
-            VoxReader.VoxModel model = scene.models.get(0);
+            VoxReader.VoxModel model = scene.models.get(part.model);
             int index = combined.models.size();
             combined.models.add(model);
             float[] bone = FigurePose.bone(assembly.species, part.bone, part.left);
-            float[] boneRot = null;
+            float[] boneRot = AnimalPose.rot(assembly.species, part.bone);
             if (hold != null && "hand".equals(part.bone)) {
                 bone = part.left ? hold.leftPos : hold.rightPos;
                 boneRot = part.left ? hold.leftRot : hold.rightRot;
