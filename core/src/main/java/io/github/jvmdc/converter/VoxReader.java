@@ -29,6 +29,8 @@ public class VoxReader {
     public static class VoxModel {
         public int sizeX, sizeY, sizeZ;
         public byte[][][] grid;
+        /** Palette for this model. Parts from different files keep their own colors. */
+        public int[] palette;
     }
 
     /**
@@ -122,6 +124,9 @@ public class VoxReader {
             if (scene.instances.isEmpty()) {
                 layOutModels(scene);
             }
+        }
+        for (VoxModel model : scene.models) {
+            model.palette = scene.palette;
         }
         return scene;
     }

@@ -106,6 +106,7 @@ public class VoxMesher {
             int sizeY = model.sizeY;
             int sizeZ = model.sizeZ;
             byte[][][] grid = model.grid;
+            int[] colors = model.palette != null ? model.palette : palette;
             for (int x = 0; x < sizeX; x++) {
                 for (int y = 0; y < sizeY; y++) {
                     for (int z = 0; z < sizeZ; z++) {
@@ -114,10 +115,10 @@ public class VoxMesher {
                             continue;
                         }
                         int paletteIndex = (colIdx & 0xFF) - 1;
-                        if (paletteIndex < 0 || paletteIndex >= palette.length) {
+                        if (paletteIndex < 0 || paletteIndex >= colors.length) {
                             continue;
                         }
-                        int rgba = palette[paletteIndex];
+                        int rgba = colors[paletteIndex];
                         float packedColor = Color.toFloatBits(
                                 ((rgba >> 24) & 0xFF) / 255f,
                                 ((rgba >> 16) & 0xFF) / 255f,

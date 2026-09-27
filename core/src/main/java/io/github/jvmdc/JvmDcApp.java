@@ -7,6 +7,8 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -16,6 +18,9 @@ import com.badlogic.gdx.utils.Align;
 import io.github.jvmdc.render.ForwardRenderer;
 import io.github.jvmdc.viewer.VoxCatalog;
 
+import java.util.ArrayList;
+import java.util.List;
+
 // gradlew.bat lwjgl3:run
 public class JvmDcApp extends ApplicationAdapter {
     private static final int TILE_W = 196;
@@ -23,6 +28,8 @@ public class JvmDcApp extends ApplicationAdapter {
     private static final int LABEL_H = 28;
     private static final int GAP = 12;
     private static final int HEADER = 28;
+    private static final int BTN_W = 96;
+    private static final int BTN_H = 20;
     private static final long LOAD_BUDGET_NS = 8_000_000L;
 
     private enum Mode { BROWSER, VIEW }
@@ -35,6 +42,9 @@ public class JvmDcApp extends ApplicationAdapter {
     private PerspectiveCamera camera;
     private final Matrix4 model = new Matrix4();
     private VoxCatalog catalog;
+    private final List<VoxCatalog.Entry> shown = new ArrayList<>();
+    private boolean npcsOnly;
+    private Texture pixel;
     private Mode mode = Mode.BROWSER;
     private VoxCatalog.Entry selected;
     private float scroll;
@@ -66,7 +76,7 @@ public class JvmDcApp extends ApplicationAdapter {
         public boolean touchDragged(int screenX, int screenY, int pointer) {
             if (mode == Mode.VIEW && button == Input.Buttons.LEFT) {
                 yaw += (screenX - lastX) * 0.45f;
-                pitch += (screenY - lastY) * 0.45f;
+                pitch += (lastY - screenY) * 0.45f;
                 pitch = MathUtils.clamp(pitch, -89f, 89f);
             }
             lastX = screenX;
@@ -84,9 +94,18 @@ public class JvmDcApp extends ApplicationAdapter {
             int dx = screenX - pressX;
             int dy = screenY - pressY;
             if (button == Input.Buttons.LEFT && mode == Mode.BROWSER && dx * dx + dy * dy < 36) {
-                int index = tileAt(screenX, screenY);
-                if (index >= 0) {
-                    open(catalog.entries.get(index));
+                int filter = filterAt(screenX, screenY);
+                if (filter >= 0) {
+                    boolean next = filter == 1;
+                    if (next != npcsOnly) {
+                        npcsOnly = next;
+                        applyFilter();
+                    }
+                } else {
+                    int index = tileAt(screenX, screenY);
+                    if (index >= 0) {
+                        open(shown.get(index));
+                    }
                 }
             }
             this.button = -1;
@@ -115,6 +134,12 @@ public class JvmDcApp extends ApplicationAdapter {
     @Override
     public void create() {
         catalog = VoxCatalog.scan();
+        applyFilter();
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        pixel = new Texture(pixmap);
+        pixmap.dispose();
         renderer = new ForwardRenderer();
         batch = new SpriteBatch();
         font = new BitmapFont();
@@ -159,6 +184,9 @@ public class JvmDcApp extends ApplicationAdapter {
         if (font != null) {
             font.dispose();
         }
+        if (pixel != null) {
+            pixel.dispose();
+        }
     }
 
     private void open(VoxCatalog.Entry entry) {
@@ -183,14 +211,14 @@ public class JvmDcApp extends ApplicationAdapter {
         int stride = TILE_H + GAP;
         int firstRow = Math.max(0, (int) (scroll / stride));
         int lastRow = (int) ((scroll + height) / stride) + 1;
-        int count = catalog.entries.size();
+        int count = shown.size();
         for (int row = firstRow; row <= lastRow; row++) {
             for (int col = 0; col < cols; col++) {
                 int index = row * cols + col;
                 if (index >= count || System.nanoTime() >= deadline) {
                     return;
                 }
-                catalog.load(catalog.entries.get(index));
+                catalog.load(shown.get(index));
             }
         }
     }
@@ -200,7 +228,7 @@ public class JvmDcApp extends ApplicationAdapter {
         int strideX = TILE_W + GAP;
         int strideY = TILE_H + GAP;
         int previewH = TILE_H - LABEL_H;
-        int count = catalog.entries.size();
+        int count = shown.size();
         if (catalog.error == null) {
             for (int i = 0; i < count; i++) {
                 int col = i % cols;
@@ -210,7 +238,7 @@ public class JvmDcApp extends ApplicationAdapter {
                 if (tileTop + TILE_H < 0 || tileTop > height) {
                     continue;
                 }
-                VoxCatalog.Entry entry = catalog.entries.get(i);
+                VoxCatalog.Entry entry = shown.get(i);
                 int glY = height - (tileTop + previewH);
                 renderer.tile(tileX, glY, TILE_W, previewH);
                 if (entry.mesh != null && entry.mesh.parts.length > 0) {
@@ -227,6 +255,7 @@ public class JvmDcApp extends ApplicationAdapter {
             font.draw(batch, catalog.error, 16, height - 16);
         } else {
             font.draw(batch, "Scroll to browse. Click a model.", 12, height - 8);
+            drawFilter(width, height);
             for (int i = 0; i < count; i++) {
                 int col = i % cols;
                 int row = i / cols;
@@ -235,7 +264,7 @@ public class JvmDcApp extends ApplicationAdapter {
                 if (tileTop + TILE_H < -8 || tileTop > height) {
                     continue;
                 }
-                String name = fit(catalog.entries.get(i).name, TILE_W - 8);
+                String name = fit(shown.get(i).name, TILE_W - 8);
                 layout.setText(font, name);
                 float textX = tileX + (TILE_W - layout.width) * 0.5f;
                 float textY = height - (tileTop + previewH + 4);
@@ -283,7 +312,8 @@ public class JvmDcApp extends ApplicationAdapter {
         float dist = Math.max(span, 1f) * 1.7f;
         camera.viewportWidth = viewW;
         camera.viewportHeight = Math.max(1f, viewH);
-        camera.position.set(dist * 0.72f, span * 0.18f, dist);
+        // Positive X and negative Z is the front-right. The opposite Z is the back.
+        camera.position.set(dist * 0.72f, span * 0.18f, -dist);
         camera.lookAt(0f, 0f, 0f);
         camera.up.set(0f, 1f, 0f);
         camera.near = Math.max(0.05f, span * 0.01f);
@@ -292,11 +322,11 @@ public class JvmDcApp extends ApplicationAdapter {
     }
 
     private void clampScroll(int height) {
-        if (catalog.error != null || catalog.entries.isEmpty()) {
+        if (catalog.error != null || shown.isEmpty()) {
             scroll = 0f;
             return;
         }
-        int rows = (catalog.entries.size() + cols - 1) / cols;
+        int rows = (shown.size() + cols - 1) / cols;
         int content = HEADER + rows * (TILE_H + GAP) + GAP;
         float maxScroll = Math.max(0, content - height);
         scroll = MathUtils.clamp(scroll, 0f, maxScroll);
@@ -329,10 +359,55 @@ public class JvmDcApp extends ApplicationAdapter {
             return -1;
         }
         int index = row * cols + col;
-        if (index < 0 || index >= catalog.entries.size()) {
+        if (index < 0 || index >= shown.size()) {
             return -1;
         }
         return index;
+    }
+
+    /** 0 is All parts, 1 is NPCs, -1 is neither. */
+    private int filterAt(int x, int y) {
+        if (y < 4 || y >= 4 + BTN_H) {
+            return -1;
+        }
+        int width = Gdx.graphics.getWidth();
+        int npcX = width - 12 - BTN_W;
+        int allX = npcX - 6 - BTN_W;
+        if (x >= allX && x < allX + BTN_W) {
+            return 0;
+        }
+        if (x >= npcX && x < npcX + BTN_W) {
+            return 1;
+        }
+        return -1;
+    }
+
+    private void applyFilter() {
+        shown.clear();
+        for (VoxCatalog.Entry entry : catalog.entries) {
+            if (!npcsOnly || entry.npc) {
+                shown.add(entry);
+            }
+        }
+        scroll = 0f;
+    }
+
+    private void drawFilter(int width, int height) {
+        int npcX = width - 12 - BTN_W;
+        int allX = npcX - 6 - BTN_W;
+        int bottom = height - 4 - BTN_H;
+        chip(allX, bottom, "All parts", !npcsOnly);
+        chip(npcX, bottom, "NPCs", npcsOnly);
+    }
+
+    private void chip(int x, int bottom, String label, boolean on) {
+        batch.setColor(on ? 0.22f : 0.45f, on ? 0.28f : 0.48f, on ? 0.36f : 0.52f, 1f);
+        batch.draw(pixel, x, bottom, BTN_W, BTN_H);
+        batch.setColor(Color.WHITE);
+        font.setColor(on ? 0.95f : 0.15f, on ? 0.96f : 0.16f, on ? 0.97f : 0.18f, 1f);
+        layout.setText(font, label);
+        font.draw(batch, label, x + (BTN_W - layout.width) * 0.5f, bottom + BTN_H - 3);
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
     }
 
     private String fit(String text, float maxWidth) {
