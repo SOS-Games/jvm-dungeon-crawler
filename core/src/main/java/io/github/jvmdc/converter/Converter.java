@@ -28,6 +28,7 @@ public class Converter {
     public static void main(String[] args) {
         Properties p = getLocalPropeties();
         getRonFiles(p);
+        //printVoxData(p);
     }
 
     // velorenAssetPath should start with /assets
@@ -83,23 +84,19 @@ public class Converter {
 
     }
 
-
-    public static void getRonFiles(Properties p) {
+    public static void printVoxData(Properties p) {
         String velorenPathString = p.getProperty("velorenPath");
         if (velorenPathString.isEmpty()) {
             System.out.println("no velorenPath");
             return;
         }
-        Path velorenAssetPath = Path.of(velorenPathString + "/assets");
-
-
-        List<Path> ronAbsolutePaths = new ArrayList<Path>();
-
+        File voxFile = new File(velorenPathString + "/assets/voxygen/voxel/weapon/sword/starter.vox");
+        if (!voxFile.exists()) {
+            System.out.println("vox file does not exist: " + voxFile.toString());
+            return;
+        }
         try {
-            /*
-            File swordFile = new File(velorenPathString + "/assets/voxygen/voxel/weapon/sword/starter.vox");
-            
-            VoxReader.VoxData voxData = VoxReader.read(swordFile);
+            VoxReader.VoxData voxData = VoxReader.read(voxFile);
 
             System.out.println("Dimensions: " + voxData.sizeX + "x" + voxData.sizeY + "x" + voxData.sizeZ);
             // Count how many non-empty voxels exist
@@ -113,12 +110,24 @@ public class Converter {
             }
             System.out.println("Solid voxels: " + solidCount);
             System.out.println("Palette Color #1: 0x" + Integer.toHexString(voxData.palette[0]));
-            */
+        } catch (IOException e) {
+            System.out.println("IOException for vox file " + voxFile.toString());
+            e.printStackTrace();
+        }
+    }
+
+    public static void getRonFiles(Properties p) {
+        String velorenPathString = p.getProperty("velorenPath");
+        if (velorenPathString.isEmpty()) {
+            System.out.println("no velorenPath");
+            return;
+        }
+        Path velorenAssetPath = Path.of(velorenPathString + "/assets");
 
 
+        List<Path> ronAbsolutePaths = new ArrayList<Path>();
 
-
-
+        try {
             Files.walk(velorenAssetPath)
                 .filter(path -> path.toString().endsWith(".ron"))
                 .forEach(path -> ronAbsolutePaths.add(path));
