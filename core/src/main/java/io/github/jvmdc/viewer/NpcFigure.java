@@ -331,7 +331,9 @@ final class NpcFigure {
             float[] rotation;
             float[] translation;
             if (boneRot != null) {
-                if (part.mirror) {
+                // A held weapon shifts its grip when flipped. A mirrored limb, such as
+                // a bird's left wing, flips the mesh and keeps the manifest offset.
+                if (part.mirror && part.tool != null) {
                     ox = -part.ox - model.sizeX;
                 }
                 float cx = ox + model.sizeX * 0.5f;
