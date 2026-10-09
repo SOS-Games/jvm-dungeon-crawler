@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Align;
 import io.github.jvmdc.render.ForwardRenderer;
 import io.github.jvmdc.viewer.VoxCatalog;
@@ -34,6 +35,17 @@ public class JvmDcApp extends ApplicationAdapter {
 
     private enum Mode { BROWSER, VIEW }
 
+    /** How a drag in the large view is used. */
+    private enum Drag { SPIN, SLIDE, ORBIT }
+
+    // Front-right camera, in units of the model's size. Orbit starts on this same view.
+    private static final float CAM_X = 0.72f * 1.7f;
+    private static final float CAM_Y = 0.18f;
+    private static final float CAM_Z = -1.7f;
+    private static final float ORBIT_RADIUS = (float) Math.sqrt(CAM_X * CAM_X + CAM_Y * CAM_Y + CAM_Z * CAM_Z);
+    private static final float ORBIT_YAW0 = MathUtils.atan2(CAM_X, CAM_Z) * MathUtils.radiansToDegrees;
+    private static final float ORBIT_PITCH0 = MathUtils.asin(CAM_Y / ORBIT_RADIUS) * MathUtils.radiansToDegrees;
+
     private ForwardRenderer renderer;
     private SpriteBatch batch;
     private BitmapFont font;
@@ -50,6 +62,15 @@ public class JvmDcApp extends ApplicationAdapter {
     private float scroll;
     private float yaw;
     private float pitch;
+    private Drag drag = Drag.SPIN;
+    /** Sky backdrop and the nearby lamp. Off until the Scene button is turned on. */
+    private boolean showScene;
+    private float slideX;
+    private float slideZ;
+    private float orbitYaw = ORBIT_YAW0;
+    private float orbitPitch = ORBIT_PITCH0;
+    private final Vector3 groundForward = new Vector3();
+    private final Vector3 groundRight = new Vector3();
     private int cols = 1;
 
     private final InputAdapter input = new InputAdapter() {
@@ -58,6 +79,7 @@ public class JvmDcApp extends ApplicationAdapter {
         private int lastX;
         private int lastY;
         private int button = -1;
+        private boolean pressOnModeChip;
 
         @Override
         public boolean touchDown(int screenX, int screenY, int pointer, int button) {
@@ -69,15 +91,29 @@ public class JvmDcApp extends ApplicationAdapter {
             lastX = screenX;
             lastY = screenY;
             this.button = button;
+            pressOnModeChip = mode == Mode.VIEW && viewModeAt(screenX, screenY) >= 0;
             return true;
         }
 
         @Override
         public boolean touchDragged(int screenX, int screenY, int pointer) {
-            if (mode == Mode.VIEW && button == Input.Buttons.LEFT) {
-                yaw += (screenX - lastX) * 0.45f;
-                pitch += (lastY - screenY) * 0.45f;
-                pitch = MathUtils.clamp(pitch, -89f, 89f);
+            if (mode == Mode.VIEW && button == Input.Buttons.LEFT && !pressOnModeChip) {
+                int dx = screenX - lastX;
+                int dy = lastY - screenY;
+                if (drag == Drag.SLIDE && shiftDown()) {
+                    pitch += dy * 0.45f;
+                    pitch = MathUtils.clamp(pitch, -89f, 89f);
+                } else if (drag == Drag.SLIDE) {
+                    slideOnGround(dx, dy);
+                } else if (drag == Drag.ORBIT) {
+                    orbitYaw += dx * 0.45f;
+                    orbitPitch += dy * 0.45f;
+                    orbitPitch = MathUtils.clamp(orbitPitch, -89f, 89f);
+                } else {
+                    yaw += dx * 0.45f;
+                    pitch += dy * 0.45f;
+                    pitch = MathUtils.clamp(pitch, -89f, 89f);
+                }
             }
             lastX = screenX;
             lastY = screenY;
@@ -93,6 +129,18 @@ public class JvmDcApp extends ApplicationAdapter {
             }
             int dx = screenX - pressX;
             int dy = screenY - pressY;
+            if (button == Input.Buttons.LEFT && mode == Mode.VIEW && dx * dx + dy * dy < 36) {
+                int picked = viewModeAt(screenX, screenY);
+                if (picked == 0) {
+                    drag = Drag.SPIN;
+                } else if (picked == 1) {
+                    drag = Drag.SLIDE;
+                } else if (picked == 2) {
+                    drag = Drag.ORBIT;
+                } else if (picked == 3) {
+                    showScene = !showScene;
+                }
+            }
             if (button == Input.Buttons.LEFT && mode == Mode.BROWSER && dx * dx + dy * dy < 36) {
                 int filter = filterAt(screenX, screenY);
                 if (filter >= 0) {
@@ -193,6 +241,10 @@ public class JvmDcApp extends ApplicationAdapter {
         selected = entry;
         yaw = 0f;
         pitch = 0f;
+        slideX = 0f;
+        slideZ = 0f;
+        orbitYaw = ORBIT_YAW0;
+        orbitPitch = ORBIT_PITCH0;
         mode = Mode.VIEW;
         catalog.load(entry);
     }
@@ -276,18 +328,30 @@ public class JvmDcApp extends ApplicationAdapter {
 
     private void renderView(int width, int height) {
         String path = selected == null ? "" : selected.path;
-        layout.setText(font, path, Color.BLACK, width - 24, Align.left, true);
+        int chips = BTN_W * 4 + 18 + 12;
+        layout.setText(font, path, Color.BLACK, width - 24 - chips, Align.left, true);
         float pathHeight = layout.height;
         int header = (int) (16 + pathHeight + 22);
         int viewH = Math.max(1, height - header);
         renderer.begin();
         renderer.tile(0, 0, width, viewH);
+        float span = selected != null && selected.mesh != null ? selected.mesh.span : 8f;
+        frame(span, width, viewH);
+        if (showScene) {
+            renderer.backdrop(camera);
+        }
         if (selected != null && selected.mesh != null && selected.mesh.parts.length > 0) {
-            frame(selected.mesh.span, width, viewH);
             model.idt();
+            model.translate(slideX, 0f, slideZ);
             model.rotate(0f, 1f, 0f, yaw);
             model.rotate(1f, 0f, 0f, pitch);
+            if (showScene) {
+                renderer.placeLamp(selected.mesh.span);
+            }
             renderer.draw(camera, selected.mesh.parts, model);
+            if (showScene) {
+                renderer.drawLamp(camera, selected.mesh.span);
+            }
         }
         renderer.end();
         beginText(width, height);
@@ -296,8 +360,21 @@ public class JvmDcApp extends ApplicationAdapter {
         font.setColor(0.22f, 0.24f, 0.28f, 1f);
         String hint = selected != null && selected.failed
                 ? "Could not read this file. Esc to go back."
-                : "Drag to rotate. Esc or right-click to go back.";
+                : drag == Drag.SLIDE
+                ? "Drag to slide the model. Shift-drag to tilt. Esc or right-click to go back."
+                : drag == Drag.ORBIT
+                ? "Drag to move the camera around the model. Esc or right-click to go back."
+                : "Drag to turn the model. Esc or right-click to go back.";
         font.draw(batch, hint, 12, height - 12 - pathHeight);
+        int bottom = height - 4 - BTN_H;
+        int orbitBtn = width - 12 - BTN_W;
+        int slideBtn = orbitBtn - 6 - BTN_W;
+        int spinBtn = slideBtn - 6 - BTN_W;
+        int sceneBtn = spinBtn - 6 - BTN_W;
+        chip(sceneBtn, bottom, "Scene", showScene);
+        chip(spinBtn, bottom, "Spin", drag == Drag.SPIN);
+        chip(slideBtn, bottom, "Slide", drag == Drag.SLIDE);
+        chip(orbitBtn, bottom, "Orbit", drag == Drag.ORBIT);
         batch.end();
     }
 
@@ -312,9 +389,22 @@ public class JvmDcApp extends ApplicationAdapter {
         float dist = Math.max(span, 1f) * 1.7f;
         camera.viewportWidth = viewW;
         camera.viewportHeight = Math.max(1f, viewH);
-        // Positive X and negative Z is the front-right. The opposite Z is the back.
-        camera.position.set(dist * 0.72f, span * 0.18f, -dist);
-        camera.lookAt(0f, 0f, 0f);
+        // Positive X and negative Z is the front-right. Orbit swings around the model.
+        float lookX = 0f;
+        float lookZ = 0f;
+        if (mode == Mode.VIEW && drag == Drag.ORBIT) {
+            lookX = slideX;
+            lookZ = slideZ;
+            float radius = Math.max(span, 1f) * ORBIT_RADIUS;
+            float cp = MathUtils.cosDeg(orbitPitch);
+            camera.position.set(
+                    lookX + radius * cp * MathUtils.sinDeg(orbitYaw),
+                    radius * MathUtils.sinDeg(orbitPitch),
+                    lookZ + radius * cp * MathUtils.cosDeg(orbitYaw));
+        } else {
+            camera.position.set(dist * 0.72f, span * 0.18f, -dist);
+        }
+        camera.lookAt(lookX, 0f, lookZ);
         camera.up.set(0f, 1f, 0f);
         camera.near = Math.max(0.05f, span * 0.01f);
         camera.far = Math.max(20f, dist * 8f);
@@ -363,6 +453,55 @@ public class JvmDcApp extends ApplicationAdapter {
             return -1;
         }
         return index;
+    }
+
+    /**
+     * Move the model on the ground. Screen right follows the camera's right,
+     * and screen up moves it away along the ground. Yaw stays as it was.
+     */
+    private void slideOnGround(int dx, int dy) {
+        float span = selected != null && selected.mesh != null ? selected.mesh.span : 1f;
+        float dist = Math.max(span, 1f) * 1.7f;
+        float viewH = Math.max(1f, camera.viewportHeight);
+        float worldPerPixel = (2f * dist * MathUtils.sinDeg(25f) / MathUtils.cosDeg(25f)) / viewH;
+        groundForward.set(camera.direction.x, 0f, camera.direction.z);
+        if (groundForward.len2() < 1e-8f) {
+            groundForward.set(0f, 0f, 1f);
+        }
+        groundForward.nor();
+        groundRight.set(0f, 1f, 0f).crs(groundForward).nor();
+        slideX += (groundRight.x * dx + groundForward.x * dy) * worldPerPixel;
+        slideZ += (groundRight.z * dx + groundForward.z * dy) * worldPerPixel;
+    }
+
+    private static boolean shiftDown() {
+        return Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+    }
+
+    /** 0 is Spin, 1 is Slide, 2 is Orbit, 3 is Scene, -1 is neither. Input y is measured from the top of the window. */
+    private int viewModeAt(int x, int y) {
+        if (y < 4 || y >= 4 + BTN_H) {
+            return -1;
+        }
+        int width = Gdx.graphics.getWidth();
+        int orbitBtn = width - 12 - BTN_W;
+        int slideBtn = orbitBtn - 6 - BTN_W;
+        int spinBtn = slideBtn - 6 - BTN_W;
+        int sceneBtn = spinBtn - 6 - BTN_W;
+        if (x >= sceneBtn && x < sceneBtn + BTN_W) {
+            return 3;
+        }
+        if (x >= spinBtn && x < spinBtn + BTN_W) {
+            return 0;
+        }
+        if (x >= slideBtn && x < slideBtn + BTN_W) {
+            return 1;
+        }
+        if (x >= orbitBtn && x < orbitBtn + BTN_W) {
+            return 2;
+        }
+        return -1;
     }
 
     /** 0 is All parts, 1 is NPCs, -1 is neither. */

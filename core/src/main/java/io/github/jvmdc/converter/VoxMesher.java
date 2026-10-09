@@ -14,11 +14,12 @@ import java.util.List;
  * Turns a voxel scene into triangle meshes. Hidden faces are dropped. A model
  * that does not fit in 16-bit indices is split into several meshes. Palette
  * slots 13 to 15 are marked glowing in the color alpha. Slot 16 is a hole.
+ * Each face corner carries how open the neighboring cells are, so creases shade darker.
  */
 public class VoxMesher {
 
-    // Position (3), normal (3), packed color (1)
-    private static final int VERTEX_SIZE = 7;
+    // Position (3), normal (3), packed color (1), corner shadow (1)
+    private static final int VERTEX_SIZE = 8;
     private static final int MAX_VERTS = 65532;
 
     public static final class VoxMesh {
@@ -93,7 +94,8 @@ public class VoxMesher {
         private final VertexAttributes attributes = new VertexAttributes(
                 VertexAttribute.Position(),
                 VertexAttribute.Normal(),
-                VertexAttribute.ColorPacked()
+                VertexAttribute.ColorPacked(),
+                new VertexAttribute(VertexAttributes.Usage.Generic, 1, "a_ao")
         );
 
         Builder(int[] palette) {
@@ -127,27 +129,27 @@ public class VoxMesher {
                                 glows(colIdx) ? 1f : 0f
                         );
                         if (z + 1 >= sizeZ || !occupied(grid[x][y][z + 1])) {
-                            addQuad(model, rotation, translation, packedColor,
+                            addQuad(model, grid, x, y, z, 0, 0, 1, rotation, translation, packedColor,
                                     x, y, z + 1, x + 1, y, z + 1, x + 1, y + 1, z + 1, x, y + 1, z + 1);
                         }
                         if (z - 1 < 0 || !occupied(grid[x][y][z - 1])) {
-                            addQuad(model, rotation, translation, packedColor,
+                            addQuad(model, grid, x, y, z, 0, 0, -1, rotation, translation, packedColor,
                                     x, y + 1, z, x + 1, y + 1, z, x + 1, y, z, x, y, z);
                         }
                         if (x + 1 >= sizeX || !occupied(grid[x + 1][y][z])) {
-                            addQuad(model, rotation, translation, packedColor,
+                            addQuad(model, grid, x, y, z, 1, 0, 0, rotation, translation, packedColor,
                                     x + 1, y, z, x + 1, y + 1, z, x + 1, y + 1, z + 1, x + 1, y, z + 1);
                         }
                         if (x - 1 < 0 || !occupied(grid[x - 1][y][z])) {
-                            addQuad(model, rotation, translation, packedColor,
+                            addQuad(model, grid, x, y, z, -1, 0, 0, rotation, translation, packedColor,
                                     x, y + 1, z, x, y, z, x, y, z + 1, x, y + 1, z + 1);
                         }
                         if (y - 1 < 0 || !occupied(grid[x][y - 1][z])) {
-                            addQuad(model, rotation, translation, packedColor,
+                            addQuad(model, grid, x, y, z, 0, -1, 0, rotation, translation, packedColor,
                                     x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1);
                         }
                         if (y + 1 >= sizeY || !occupied(grid[x][y + 1][z])) {
-                            addQuad(model, rotation, translation, packedColor,
+                            addQuad(model, grid, x, y, z, 0, 1, 0, rotation, translation, packedColor,
                                     x + 1, y + 1, z, x, y + 1, z, x, y + 1, z + 1, x + 1, y + 1, z + 1);
                         }
                     }
@@ -172,7 +174,9 @@ public class VoxMesher {
             out[2] = -wy;
         }
 
-        private void addQuad(VoxReader.VoxModel model, float[] rotation, float[] translation, float color,
+        private void addQuad(VoxReader.VoxModel model, byte[][][] grid,
+                             int vx, int vy, int vz, int nx, int ny, int nz,
+                             float[] rotation, float[] translation, float color,
                              int x0, int y0, int z0, int x1, int y1, int z1,
                              int x2, int y2, int z2, int x3, int y3, int z3) {
             if (vertices.size / VERTEX_SIZE + 4 > MAX_VERTS) {
@@ -181,6 +185,10 @@ public class VoxMesher {
                 vertParts.add(vertices);
                 indexParts.add(indices);
             }
+            float ao0 = cornerAo(grid, vx, vy, vz, x0, y0, z0, nx, ny, nz);
+            float ao1 = cornerAo(grid, vx, vy, vz, x1, y1, z1, nx, ny, nz);
+            float ao2 = cornerAo(grid, vx, vy, vz, x2, y2, z2, nx, ny, nz);
+            float ao3 = cornerAo(grid, vx, vy, vz, x3, y3, z3, nx, ny, nz);
             corner(model, rotation, translation, x0, y0, z0, p0);
             corner(model, rotation, translation, x1, y1, z1, p1);
             corner(model, rotation, translation, x2, y2, z2, p2);
@@ -191,14 +199,14 @@ public class VoxMesher {
             float fx = p2[0] - p0[0];
             float fy = p2[1] - p0[1];
             float fz = p2[2] - p0[2];
-            float nx = ey * fz - ez * fy;
-            float ny = ez * fx - ex * fz;
-            float nz = ex * fy - ey * fx;
-            float len = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
+            float gx = ey * fz - ez * fy;
+            float gy = ez * fx - ex * fz;
+            float gz = ex * fy - ey * fx;
+            float len = (float) Math.sqrt(gx * gx + gy * gy + gz * gz);
             if (len > 1e-8f) {
-                nx /= len;
-                ny /= len;
-                nz /= len;
+                gx /= len;
+                gy /= len;
+                gz /= len;
             }
             // A mirror (left limbs) flips the triangle order. Swap a corner and
             // the normal so the outside face stays the one that is drawn.
@@ -212,25 +220,80 @@ public class VoxMesher {
                 p3[0] = sx;
                 p3[1] = sy;
                 p3[2] = sz;
-                nx = -nx;
-                ny = -ny;
-                nz = -nz;
+                float swapAo = ao1;
+                ao1 = ao3;
+                ao3 = swapAo;
+                gx = -gx;
+                gy = -gy;
+                gz = -gz;
             }
             include(p0);
             include(p1);
             include(p2);
             include(p3);
             short offset = (short) (vertices.size / VERTEX_SIZE);
-            put(p0, nx, ny, nz, color);
-            put(p1, nx, ny, nz, color);
-            put(p2, nx, ny, nz, color);
-            put(p3, nx, ny, nz, color);
-            indices.add(offset);
-            indices.add((short) (offset + 1));
-            indices.add((short) (offset + 2));
-            indices.add((short) (offset + 2));
-            indices.add((short) (offset + 3));
-            indices.add(offset);
+            put(p0, gx, gy, gz, color, ao0);
+            put(p1, gx, gy, gz, color, ao1);
+            put(p2, gx, gy, gz, color, ao2);
+            put(p3, gx, gy, gz, color, ao3);
+            // The diagonal joins the darker pair so the shadow does not streak across the face.
+            if (ao0 + ao2 < ao1 + ao3) {
+                indices.add(offset);
+                indices.add((short) (offset + 1));
+                indices.add((short) (offset + 3));
+                indices.add((short) (offset + 1));
+                indices.add((short) (offset + 2));
+                indices.add((short) (offset + 3));
+            } else {
+                indices.add(offset);
+                indices.add((short) (offset + 1));
+                indices.add((short) (offset + 2));
+                indices.add((short) (offset + 2));
+                indices.add((short) (offset + 3));
+                indices.add(offset);
+            }
+        }
+
+        /**
+         * How open the cells around this face corner are, from 0 to 1. The cell
+         * the face looks into counts, plus the two beside the corner. The diagonal
+         * counts only when one of those sides is open.
+         */
+        private static float cornerAo(byte[][][] grid, int vx, int vy, int vz,
+                                      int cx, int cy, int cz, int nx, int ny, int nz) {
+            int fx = vx + nx;
+            int fy = vy + ny;
+            int fz = vz + nz;
+            int stepX = nx == 0 ? (cx == vx ? -1 : 1) : 0;
+            int stepY = ny == 0 ? (cy == vy ? -1 : 1) : 0;
+            int stepZ = nz == 0 ? (cz == vz ? -1 : 1) : 0;
+            boolean side1;
+            boolean side2;
+            boolean diagonal;
+            if (nx != 0) {
+                side1 = open(grid, fx, fy + stepY, fz);
+                side2 = open(grid, fx, fy, fz + stepZ);
+                diagonal = open(grid, fx, fy + stepY, fz + stepZ);
+            } else if (ny != 0) {
+                side1 = open(grid, fx + stepX, fy, fz);
+                side2 = open(grid, fx, fy, fz + stepZ);
+                diagonal = open(grid, fx + stepX, fy, fz + stepZ);
+            } else {
+                side1 = open(grid, fx + stepX, fy, fz);
+                side2 = open(grid, fx, fy + stepY, fz);
+                diagonal = open(grid, fx + stepX, fy + stepY, fz);
+            }
+            float diag = (side1 || side2) && diagonal ? 1f : 0f;
+            return ((side1 ? 1f : 0f) + (side2 ? 1f : 0f) + diag + 1f) * 0.25f;
+        }
+
+        /** Missing cells and holes let light in. */
+        private static boolean open(byte[][][] grid, int x, int y, int z) {
+            if (x < 0 || y < 0 || z < 0
+                    || x >= grid.length || y >= grid[0].length || z >= grid[0][0].length) {
+                return true;
+            }
+            return !occupied(grid[x][y][z]);
         }
 
         private static float determinant(float[] r) {
@@ -260,7 +323,7 @@ public class VoxMesher {
             return slot >= 13 && slot <= 15;
         }
 
-        private void put(float[] p, float nx, float ny, float nz, float color) {
+        private void put(float[] p, float nx, float ny, float nz, float color, float ao) {
             vertices.add(p[0]);
             vertices.add(p[1]);
             vertices.add(p[2]);
@@ -268,6 +331,7 @@ public class VoxMesher {
             vertices.add(ny);
             vertices.add(nz);
             vertices.add(color);
+            vertices.add(ao);
         }
 
         VoxMesh finish() {
