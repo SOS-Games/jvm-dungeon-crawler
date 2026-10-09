@@ -1,0 +1,640 @@
+file (under assets/voxygen/audio/),author/artist,license,status
+ambience/cave.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+ambience/leaves.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+ambience/rain.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+ambience/river_loud.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+ambience/river_quiet.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+ambience/thunder.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+ambience/wind.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+null.ogg,(uncredited),GPL-3.0 (default; file not in credits.ron),OK under Veloren default GPL-3.0; author unknown
+sfx/abilities/arrow_shot_1.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/arrow_shot_2.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/arrow_shot_3.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/arrow_shot_4.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/barrel_organ.ogg,Samstler,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/bleep.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/bloodmoon_heiress_summon.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/cyclops_charge.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/deep_laugh.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/explosion.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/fire_breath.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/fire_dash.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/fire_shot_1.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/fire_shot_2.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/flame_cloak.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/flame_thrower.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/fuse.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/gigas_frost_roar.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/heal.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/heal_bomb.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/hiss.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/ice_crack.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/klonk.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/laser_beam.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/long_hiss.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/minotaur_smash_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/minotaur_smash_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/napalm_pool.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/napalm_strike.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/pickaxe_damage.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/pickaxe_damage_broken.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/pickaxe_damage_stronk.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/pyroclasm_bolt.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/pyroclasm_charge.ogg,riccifl0w,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/sceptre_aura.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/abilities/sceptre_channeling.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/separated_second_swing.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/separated_third_swing.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/shovel.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/smashklonk.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/steam.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/strigoi_head.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/surprise_egg_0.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/surprise_egg_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/surprise_egg_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/surprise_egg_3.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/swing.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/swing_sword.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/swoosh.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/sword_dash.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/abilities/whoosh.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/abilities/yeet.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/bees_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/birdcall_01.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_02.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_03.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_04.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_05.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_06.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_07.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_08.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_09.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/birdcall_10.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/crickets_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/crickets_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/crickets_3.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/fire.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/ambient/frog_croak_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/lightning_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/owl_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/portal_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/portal_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ambient/river_sounds/running_water-001.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-002.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-003.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-004.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-005.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-006.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-007.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-008.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-009.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-010.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-011.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-012.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-013.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-014.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-015.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-016.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-017.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-018.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-019.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-020.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-021.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-022.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-023.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-024.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-025.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-026.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/ambient/river_sounds/running_water-027.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/arrow_hit.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/arrow_miss.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/block_1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/block_2.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/block_3.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/catch_air_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_3.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_4.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_5.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_6.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_7.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/catch_air_8.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/dazed_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/dazed_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/dazed_3.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/death_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/death_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/death_3.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/dive_roll_1.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/dive_roll_2.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/dive_roll_cancel_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/dive_roll_cancel_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/experience_gained_1.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/experience_gained_2.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/experience_gained_3.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/glider_close.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/glider_open.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/hit_1.ogg,Flashbang,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/hit_2.ogg,Flashbang,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/hit_3.ogg,Flashbang,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/hit_4.ogg,Flashbang,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/interrupted_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/interrupted_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/interrupted_3.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/interrupted_4.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/knockeddown_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/knockeddown_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/level_up_sound_-_shorter_wind_up.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/character/parry_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/parry_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/character/stunned_1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/stunned_2.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/character/stunned_3.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/crafting/hammer.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/snow_step_1.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/snow_step_2.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/snow_step_3.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/splash_big.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/footsteps/splash_medium.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/footsteps/splash_small.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required"
+sfx/footsteps/stepdirt_1.ogg,Pfau,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stepdirt_2.ogg,Pfau,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stepdirt_3.ogg,Pfau,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stepdirt_4.ogg,Pfau,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stepdirt_5.ogg,Pfau,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stepgrass_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/stepgrass_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/stepgrass_3.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/stepgrass_4.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/stepgrass_5.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/stepgrass_6.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/stone_step_1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_10.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_11.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_12.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_2.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_3.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_4.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_5.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_6.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_7.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_8.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/stone_step_9.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/water_splash_1.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/water_splash_2.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/water_splash_3.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/water_splash_4.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/footsteps/wood_step_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/wood_step_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/wood_step_3.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/footsteps/wood_step_4.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/instrument/banjo/banjo_c1d1ae1e1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_c1e1c1e1d1g1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_c1e1d1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_ceceac1ce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_cecegd1ce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_cecgce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_ceeg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_daece.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_e1a1e1g12c2.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_egc1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_egegac1eg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_egegc1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_egga.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/banjo/banjo_gd1gd1ac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_c1ae.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_cce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_ceg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_d1c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_d1ge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_dda.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_eeg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/dark_guitar/dark_guitar_gec.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_ac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_ag.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_cec.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_de.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_e1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/double_bass/double_bass_ge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_c1ag.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_c1d1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_ceg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_dac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_eg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/flute/flute_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_c1ag.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_c1d1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_ceg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_dac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_eg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/glass_flute/glass_flute_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_a.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_ac1a.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_c.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_c1.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_c1d1c1.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_cdc.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_d.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_ded.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_e.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_ege.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_g.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/guitar/guitar_gag.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_a.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_c.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_c1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_c1ag.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_cde.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_d.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_d1c1a.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_d1g.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_e.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_ec1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_ega.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/icy_talharpa/icy_talharpa_g.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/kalimba/kalimba_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_c1d1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_c1ge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_cdc.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_ceg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_da.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kalimba/kalimba_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_c1e1c2.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_c1e1g1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_cdeg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_ce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_cec1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_cega.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_d1a1d2c2.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_dad1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_deac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_e1g1e2c2.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_eg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_egad1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/kora/kora_ege1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_ac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_c1d1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_cdc.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_ded.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_ege.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lute/lute_gag.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_c1ag.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_cde.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_d1c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_d1g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_ec1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_ega.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/lyre/lyre_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_ad1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_d1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_ec.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_ec1g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/melodica/melodica_ge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/oud/oud_ac1a1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/oud/oud_cgc1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/oud/oud_dad1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/oud/oud_ege1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/oud/oud_gd1g1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/rhythmo/rhythmo.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/shamisen/shamisen_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_aec1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_c1c1a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_cc.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_cdc1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_cea.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_ceg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_cge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_dac.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_ea.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_eac1c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/shamisen/shamisen_gg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_c1ae.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_ce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_da.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_ec1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_gd1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/sitar/sitar_gec.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_ac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_cd.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_cge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_d1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_ec.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_ec1g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_ga.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_gd1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/starlight_conch/starlight_conch_ge.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_ac1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_c1ae.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_c1ag.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_c1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_ce.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_d1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_d1c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_eg.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/steeltonguedrum/steeltonguedrum_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/timbrel_of_chaos/timbrel_of_chaos_0.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/timbrel_of_chaos/timbrel_of_chaos_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/timbrel_of_chaos/timbrel_of_chaos_2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/timbrel_of_chaos/timbrel_of_chaos_3.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified (not relevant)
+sfx/instrument/viola_pizzicato/viola_pizzicato_a.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_ac1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_c.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_c1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_cde.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_ce.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_ceac1c1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_ceg.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_d.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_d1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_dag.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_e.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_edc.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_eg.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_egc1.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_g.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_gd1a.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/viola_pizzicato/viola_pizzicato_ggc1a.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/instrument/washboard/washboard_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_d_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_d_dd.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_dd.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_dd_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/washboard/washboard_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_a.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_b.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_c.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_c1.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_d.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_e.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_f.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/instrument/wildskin_drum/wildskin_drum_g.ogg,floppy,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/inventory/add_failed.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/add_item.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/collect_gemstone.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/consumable/apple.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/consumable/food.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/consumable/liquid.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/drop_item.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/open_inventory.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/pickup_staff.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/inventory/pickup_sword.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/ui/click1.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/ui/click2.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/adlet_angry1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/adlet_angry2.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/adlet_hurt1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/adlet_hurt2.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/alligator_angry1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/alligator_angry2.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/antelope_angry1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/antelope_hurt1.ogg,alfy,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/asp_angry1.ogg,aylana,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/asp_angry2.ogg,aylana,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/asp_calm1.ogg,aylana,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/asp_hurt1.ogg,aylana,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/bird_angry1.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/cat_calm1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/cat_calm2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/cow_calm1.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/cow_calm2.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/cow_calm3.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/dagon_hurt1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/dagon_hurt2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/fungome_calm1.ogg,Tjin,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/goat_calm1.ogg,Hannibal,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/humanfemale_greeting1.ogg,Corvella,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/humanmale_greeting1.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/humanmale_hurt1.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_1.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_10.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_11.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_12.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_13.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_14.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_15.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_2.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_3.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_4.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_5.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_6.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_7.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_8.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/legoom_9.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/lion_hurt1.ogg,Robotnik,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/mandragora_hurt1.ogg,Robotnik,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/maneater_hurt1.ogg,Robotnik,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/marlin_hurt1.ogg,Robotnik,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/mindflayer_hurt1.ogg,Robotnik,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/ogre_angry1.ogg,Hannibal,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/ogre_angry2.ogg,Hannibal,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/ogre_hurt1.ogg,Hannibal,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/phoenix_angry_0.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/phoenix_angry_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/phoenix_hurt_0.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/phoenix_hurt_1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/pig_angry1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/pig_angry2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/pig_calm1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/pig_calm2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/pig_calm3.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/saurok_angry1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/sea_crocodile_angry1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/sea_crocodile_angry2.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/sheep_calm1.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/truffler_calm1.ogg,Tjin,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/truffler_calm2.ogg,Tjin,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/vampire_bat_angry.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/vampire_bat_hurt.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/wendigo_angry1.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_angry2.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_angry3.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_angry4.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_angry5.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_angry6.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_calm1.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_calm2.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_calm3.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_calm4.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wendigo_calm5.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_angry1.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_angry2.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_angry3.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_angry4.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_angry5.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_angry6.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_hurt1.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_hurt2.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_hurt3.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_hurt4.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wolf_hurt5.ogg,GeekyGami,GPL-3.0 (default),OK - GPL-3.0
+sfx/utterance/wyvern_angry.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/utterance/wyvern_hurt.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/vehicle/train_ambience.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/vehicle/train_chugg.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/vehicle/train_chugg_steam.ogg,DaforLynx,CC BY 4.0,"OK - CC BY 4.0, attribution required (not relevant)"
+sfx/vehicle/train_speed.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/vehicle/train_tracks.ogg,Zesterer,GPL-3.0 (default),OK - GPL-3.0 (not relevant)
+sfx/weapon/dagger_in.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/dagger_out.ogg,Eden,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/shield_out.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/staff_in.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/staff_out.ogg,Ellinia,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/sword_in.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/sword_out.ogg,Oolnokk,GPL-3.0 (default),OK - GPL-3.0
+sfx/weapon/weapon_in.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+sfx/weapon/weapon_out.ogg,Unknown,GPL-3.0 (default),OK under Veloren default GPL-3.0; provenance unverified
+soundtrack/cave/cavernous_hollow.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/cave/down_the_rabbit_hole.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/cave/mineral_deposits.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/cave/saturated_hallows.ogg,Flashbang,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/cave/stars_like_stalactites.ogg,DragonDee,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/barred_paths/barred_paths-end.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/barred_paths/barred_paths-loop.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/barred_paths/barred_paths-start.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/clash/clash-end.ogg,Alfredo Pompa D & Rodrigo Plata,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/clash/clash-loop.ogg,Alfredo Pompa D & Rodrigo Plata,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/clash/clash-start.ogg,Alfredo Pompa D & Rodrigo Plata,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/reversal/reversal-end.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/reversal/reversal-loop.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/combat/reversal/reversal-start.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/a_hearts_ice-cold_protection.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/dungeon/cobbled_halls.ogg,Crow,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/dank_dungeon.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/mysty_temple.ogg,Tiny,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/ruination.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/sacred_temple.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/still_hearts_coffin.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/dungeon/thrumming_waters.ogg,Jeremiah Sweeney,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/dungeon/vast_onslaught.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/a_cold_breeze_blows.ogg,Stone Music Productions,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/a_heros_sorrow.ogg,Oolnokk,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/a_peaceful_moment.ogg,ThanosFisherman,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/a_solemn_quest.ogg,Eden,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/adventurous_soul.ogg,Crow,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/aventure_fantastic.ogg,Federico Orfanó,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/ballerine_macabre.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/overworld/between_the_fairies.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/calling_wild.ogg,Ultimafounding,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/calming_hills.ogg,Ultimafounding; mixed by Robotnik,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/campfire_stories.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/desert_at_night.ogg,Federico Orfanó,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/desert_horizons.ogg,Federico Orfanó,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/drifting_along.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/ethereal_bonds.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/everbearing.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/field_grazing.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/follow_the_signs.ogg,Oolnokk,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/graceful_journey.ogg,Tobias Thy - (Thy SFX),GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/highland_of_the_hawk.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/into_the_dark_forest.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/jungle_ambient.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/just_the_beginning.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/leap_of_faith.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/legooms_lament.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/limits.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/lost_among_vast.ogg,unii,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/moonbeams.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/moonlit_canopy.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/overworld/oceania.ogg,Eden,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/raising_below_like_thunder.ogg,Rarnage,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/serene_meadows.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/short_meandering.ogg,Ap1evideogame,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/snowtop_volume.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/soaring_skies.ogg,unii,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/song_of_the_eldwood.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/stargazing.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/overworld/the_heavens_weep.ogg,Oolnokk,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/the_summit_awaits.ogg,unii,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/the_undergrowth.ogg,Oolnokk,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/torii.ogg,FaceImplosion,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/travel_by_night.ogg,Oolnokk,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/true_nature.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/verdant_glades.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/wandering_voices.ogg,Aeronic,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/overworld/winter_falls.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/a_rest_under_the_sunset.ogg,phoenix13032005,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/a_tale_worth_telling.ogg,Oolnokk; mixed by cereal7,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/bustle_and_bloom.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/fiesta_del_pueblo.ogg,Aeronic; mixed by Robotnik,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/fill_the_mugs.ogg,phoenix13032005,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/im_home.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/into_the_mines.ogg,Stone Music Productions,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/life_of_a_background_mob.ogg,GeekyGami,CC-BY-NC-SA 4.0,"EXCLUDE (NC-SA + ""not in other games"")"
+soundtrack/town/rest_assured.ogg,badbbad,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/starlit_pathways.ogg,DaforLynx,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/the_quiet_after_the_battle.ogg,Tobias Thy - (Thy SFX),GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/warmth_of_the_hearth.ogg,Crow,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/town/where_frost_played.ogg,phoenix13032005,GPL-3.0 (credits.ron default; no entry),OK - GPL-3.0 by Veloren default; credit artist
+soundtrack/veloren_title_tune.ogg,(uncredited),GPL-3.0 (credits.ron default; no entry),"OK - GPL-3.0 by Veloren default; credit artist (title tune, artist not listed)"
