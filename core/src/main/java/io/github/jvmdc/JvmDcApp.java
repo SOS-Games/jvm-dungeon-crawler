@@ -40,14 +40,6 @@ public class JvmDcApp extends ApplicationAdapter {
     /** How a drag in the large view is used. */
     private enum Drag { SPIN, SLIDE, ORBIT }
 
-    // Front-right camera, in units of the model's size. Orbit starts on this same view.
-    private static final float CAM_X = 0.72f * 1.7f;
-    private static final float CAM_Y = 0.18f;
-    private static final float CAM_Z = -1.7f;
-    private static final float ORBIT_RADIUS = (float) Math.sqrt(CAM_X * CAM_X + CAM_Y * CAM_Y + CAM_Z * CAM_Z);
-    private static final float ORBIT_YAW0 = MathUtils.atan2(CAM_X, CAM_Z) * MathUtils.radiansToDegrees;
-    private static final float ORBIT_PITCH0 = MathUtils.asin(CAM_Y / ORBIT_RADIUS) * MathUtils.radiansToDegrees;
-
     private ForwardRenderer renderer;
     private SpriteBatch batch;
     private BitmapFont font;
@@ -71,8 +63,10 @@ public class JvmDcApp extends ApplicationAdapter {
     private boolean showScene;
     private float slideX;
     private float slideZ;
-    private float orbitYaw = ORBIT_YAW0;
-    private float orbitPitch = ORBIT_PITCH0;
+    /** Large-view camera. Buttons do not write this. Orbit drag turns it in place. */
+    private final Vector3 viewPos = new Vector3();
+    private final Vector3 viewLook = new Vector3();
+    private final Vector3 orbitOffset = new Vector3();
     private final Vector3 groundForward = new Vector3();
     private final Vector3 groundRight = new Vector3();
     private int cols = 1;
@@ -110,9 +104,7 @@ public class JvmDcApp extends ApplicationAdapter {
                 } else if (drag == Drag.SLIDE) {
                     slideOnGround(dx, dy);
                 } else if (drag == Drag.ORBIT) {
-                    orbitYaw += dx * 0.45f;
-                    orbitPitch += dy * 0.45f;
-                    orbitPitch = MathUtils.clamp(orbitPitch, -89f, 89f);
+                    orbitDrag(dx * 0.45f, dy * 0.45f);
                 } else {
                     yaw += dx * 0.45f;
                     pitch += dy * 0.45f;
@@ -276,10 +268,37 @@ public class JvmDcApp extends ApplicationAdapter {
         pitch = 0f;
         slideX = 0f;
         slideZ = 0f;
-        orbitYaw = ORBIT_YAW0;
-        orbitPitch = ORBIT_PITCH0;
         mode = Mode.VIEW;
         catalog.load(entry);
+        placeDefaultView(entry.mesh != null ? entry.mesh.span : 8f);
+    }
+
+    /** Front-right view of a newly opened model. */
+    private void placeDefaultView(float span) {
+        float dist = Math.max(span, 1f) * 1.7f;
+        viewPos.set(dist * 0.72f, span * 0.18f, -dist);
+        viewLook.set(0f, 0f, 0f);
+    }
+
+    /**
+     * Turn the large-view camera around the point it is already looking at.
+     * Distance stays as it was, so the model does not jump closer or farther.
+     */
+    private void orbitDrag(float yawDeg, float pitchDeg) {
+        orbitOffset.set(viewPos).sub(viewLook);
+        float dist = orbitOffset.len();
+        if (dist < 1e-4f) {
+            return;
+        }
+        float yaw = MathUtils.atan2(orbitOffset.x, orbitOffset.z) * MathUtils.radiansToDegrees;
+        float pitch = MathUtils.asin(MathUtils.clamp(orbitOffset.y / dist, -1f, 1f)) * MathUtils.radiansToDegrees;
+        yaw += yawDeg;
+        pitch = MathUtils.clamp(pitch + pitchDeg, -89f, 89f);
+        float cp = MathUtils.cosDeg(pitch);
+        viewPos.set(
+                viewLook.x + dist * cp * MathUtils.sinDeg(yaw),
+                viewLook.y + dist * MathUtils.sinDeg(pitch),
+                viewLook.z + dist * cp * MathUtils.cosDeg(yaw));
     }
 
     private void pumpLoads(int height) {
@@ -424,22 +443,15 @@ public class JvmDcApp extends ApplicationAdapter {
         float dist = Math.max(span, 1f) * 1.7f;
         camera.viewportWidth = viewW;
         camera.viewportHeight = Math.max(1f, viewH);
-        // Positive X and negative Z is the front-right. Orbit swings around the model.
-        float lookX = 0f;
-        float lookZ = 0f;
-        if (mode == Mode.VIEW && drag == Drag.ORBIT) {
-            lookX = slideX;
-            lookZ = slideZ;
-            float radius = Math.max(span, 1f) * ORBIT_RADIUS;
-            float cp = MathUtils.cosDeg(orbitPitch);
-            camera.position.set(
-                    lookX + radius * cp * MathUtils.sinDeg(orbitYaw),
-                    radius * MathUtils.sinDeg(orbitPitch),
-                    lookZ + radius * cp * MathUtils.cosDeg(orbitYaw));
+        // Tiles use a fixed front-right camera. The large view uses the camera
+        // left by the last orbit drag, so Spin, Slide, and Scene do not reframe it.
+        if (mode == Mode.VIEW) {
+            camera.position.set(viewPos);
+            camera.lookAt(viewLook);
         } else {
             camera.position.set(dist * 0.72f, span * 0.18f, -dist);
+            camera.lookAt(0f, 0f, 0f);
         }
-        camera.lookAt(lookX, 0f, lookZ);
         camera.up.set(0f, 1f, 0f);
         camera.near = Math.max(0.05f, span * 0.01f);
         camera.far = Math.max(20f, dist * 8f);

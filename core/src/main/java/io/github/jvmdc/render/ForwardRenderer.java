@@ -20,8 +20,9 @@ import com.badlogic.gdx.math.Vector3;
  * Veloren's sun, a nearby yellow lamp, and corner shadows. The picture is
  * stored bright, then a tone curve brings it down for the screen. The large
  * view also blurs that bright picture into a soft halo around glowing voxels.
- * The backdrop is green toward the ground and blue overhead, with the sun
- * drawn in that blue. The model matrix is how the large view spins a mesh.
+ * The backdrop is Veloren's day sky: brighter blue overhead, darker blue
+ * toward the ground, and the sun in that sky. The model matrix is how the
+ * large view spins a mesh.
  */
 public final class ForwardRenderer {
     /** Direction toward the sun, Y-up. High enough to sit in the blue, still inside the default view. */
@@ -126,8 +127,8 @@ public final class ForwardRenderer {
     }
 
     /**
-     * Green toward the ground, blue overhead, and a yellow sun. This is only
-     * the backdrop. It is not a floor you can stand on.
+     * Veloren's day sky behind the model. Brighter overhead, darker toward
+     * the ground, with the sun in it. This is only the backdrop.
      */
     public void backdrop(PerspectiveCamera camera) {
         skyShader.bind();
@@ -522,30 +523,32 @@ public final class ForwardRenderer {
         uniform vec3 u_sun_to;
         out vec4 frag;
 
-        vec3 srgbToLinear(vec3 srgb) {
-            bvec3 cutoff = lessThan(srgb, vec3(0.04045));
-            vec3 higher = pow((srgb + vec3(0.055)) / vec3(1.055), vec3(2.4));
-            vec3 lower = srgb / vec3(12.92);
-            return mix(higher, lower, cutoff);
-        }
-
-        vec3 displayToHdr(vec3 display) {
-            vec3 mapped = min(srgbToLinear(display), vec3(0.98));
-            vec3 preGamma = pow(mapped, vec3(1.0 / 1.3));
-            return -0.5 * log(max(vec3(1.0) - preGamma, vec3(0.0001)));
-        }
+        // Day colors from Veloren sky.glsl. Stars, the moon, and clouds are left out.
+        // The viewer's sun sits low so it stays on screen, so the gradient stays at noon
+        // instead of shifting toward dusk.
+        const vec3 SKY_DAY_TOP = vec3(0.1, 0.5, 0.9);
+        const vec3 SKY_DAY_MID = vec3(0.18, 0.28, 0.6);
+        const vec3 SKY_DAY_BOT = vec3(0.1, 0.2, 0.3);
+        const vec3 SUN_HALO_DAY = vec3(0.15, 0.15, 0.001);
+        const vec3 SUN_SURF_COLOR = vec3(1.5, 0.9, 0.35) * 10.0;
+        const float SUN_COLOR_FACTOR = 5.0;
 
         void main() {
             vec4 world = u_inv_projview * vec4(v_clip, 1.0, 1.0);
-            vec3 dir = normalize(world.xyz / world.w - u_cam_pos);
-            float lift = smoothstep(-0.25, 0.35, dir.y);
-            vec3 col = mix(vec3(0.27, 0.48, 0.24), vec3(0.36, 0.56, 0.86), lift);
-            float facing = max(dot(dir, normalize(u_sun_to)), 0.0);
-            float glow = pow(facing, 90.0);
-            float disc = smoothstep(0.9978, 0.9993, facing);
-            col = mix(col, vec3(1.0, 0.90, 0.45), glow * 0.75);
-            col = mix(col, vec3(1.0, 0.92, 0.35), disc);
-            frag = vec4(displayToHdr(col), 1.0);
+            vec3 dirY = normalize(world.xyz / world.w - u_cam_pos);
+            // Mesh space is Y-up. Sky math is Z-up: x stays, up is z, forward is y.
+            vec3 dir = vec3(dirY.x, -dirY.z, dirY.y);
+            vec3 sunToY = normalize(u_sun_to);
+            vec3 sunTo = vec3(sunToY.x, -sunToY.z, sunToY.y);
+            vec3 sunDir = -sunTo;
+
+            vec3 sky = mix(mix(SKY_DAY_MID, SKY_DAY_BOT, max(-dir.z, 0.0)), SKY_DAY_TOP, max(dir.z, 0.0));
+            float facing = max(dot(dir, -sunDir), 0.0);
+            vec3 halo = SUN_HALO_DAY * 25.0 * pow(facing, 20.0);
+            float angle = 0.00035;
+            float disc = clamp((facing - (1.0 - angle)) * 4.0 / angle, 0.0, 1.0);
+            vec3 surf = disc * SUN_SURF_COLOR * SUN_COLOR_FACTOR * 0.1;
+            frag = vec4(sky + halo + surf, 1.0);
         }
         """;
 
