@@ -633,8 +633,11 @@ public final class ForwardRenderer {
 
         void main() {
             vec3 color = texture(u_color, v_uv).rgb;
-            vec3 bloom = texture(u_bloom, v_uv).rgb / 4.0;
-            vec3 hdr = mix(color, bloom, u_mix);
+            vec3 hdr = color;
+            if (u_mix > 0.0) {
+                vec3 bloom = texture(u_bloom, v_uv).rgb / 4.0;
+                hdr = mix(color, bloom, u_mix);
+            }
             vec3 mapped = vec3(1.0) - exp(-hdr * 2.0);
             mapped = pow(max(mapped, vec3(0.0)), vec3(1.3));
             frag = vec4(linearToSrgb(mapped), 1.0);

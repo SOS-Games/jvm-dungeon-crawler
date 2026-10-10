@@ -294,7 +294,8 @@ public class VoxMesher {
             put(p1, gx, gy, gz, color, ao1);
             put(p2, gx, gy, gz, color, ao2);
             put(p3, gx, gy, gz, color, ao3);
-            // The diagonal joins the darker pair so the shadow does not streak across the face.
+            // The diagonal joins the brighter pair, so one dark corner shades a triangle
+            // instead of a band across the face.
             if (ao0 + ao2 < ao1 + ao3) {
                 indices.add(offset);
                 indices.add((short) (offset + 1));

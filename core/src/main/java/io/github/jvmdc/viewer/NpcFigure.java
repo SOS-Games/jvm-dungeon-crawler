@@ -123,7 +123,93 @@ final class NpcFigure {
         }
         assemblies.addAll(largeBipeds(assetsRoot));
         assemblies.addAll(animals(assetsRoot));
+        assemblies.addAll(players(assetsRoot));
         return assemblies;
+    }
+
+    /**
+     * The same plain human, once for each weapon he can hold. Armor sets stay
+     * out of the catalog. Each figure's clips use that weapon's grip.
+     */
+    private static List<Assembly> players(Path assetsRoot) {
+        Path root = assetsRoot.resolve("voxygen/voxel");
+        String[][] weapons = {
+                {"sword", "weapon/sword/starter.vox"},
+                {"axe", "weapon/axe/2haxe_rusty.vox"},
+                {"hammer", "weapon/hammer/2hhammer_flimsy.vox"},
+                {"bow", "weapon/bow/starter.vox"},
+                {"staff", "weapon/staff/firestaff_starter.vox"},
+        };
+        List<Assembly> list = new ArrayList<>();
+        for (String[] weapon : weapons) {
+            List<Part> parts = humanBody(root);
+            int before = parts.size();
+            addVox(parts, root, weapon[1], 0f, 0f, 0f, false, "main", false);
+            if (parts.size() == before || parts.size() < 4) {
+                continue;
+            }
+            list.add(new Assembly(
+                    "human " + weapon[0],
+                    "assets/voxygen/voxel/humanoid/human/" + weapon[0],
+                    "human/" + weapon[0],
+                    parts,
+                    "character"));
+        }
+        return list;
+    }
+
+    private static List<Part> humanBody(Path root) {
+        List<Part> parts = new ArrayList<>();
+        addVox(parts, root, "figure/head/human/male.vox", -7f, -0.5f, -2f, false, "head", false);
+        addVox(parts, root, "figure/eyes/general/male_default-0.vox", -4f, 6.5f, 0f, false, "head", false);
+        addVox(parts, root, "armor/misc/chest/none.vox", -7f, -3.5f, 2f, false, "chest", false);
+        addVox(parts, root, "armor/misc/pants/none.vox", -5f, -3.5f, 1f, false, "shorts", false);
+        addVox(parts, root, "armor/misc/belt/none.vox", -5f, -3.5f, 2f, false, "belt", false);
+        addVox(parts, root, "armor/misc/hand/none.vox", -1.5f, -1.5f, -2.5f, true, "hand_l", true);
+        addVox(parts, root, "armor/misc/hand/none.vox", -1.5f, -1.5f, -2.5f, false, "hand_r", false);
+        addVox(parts, root, "armor/misc/foot/none.vox", -2.5f, -3.5f, -2f, true, "foot_l", true);
+        addVox(parts, root, "armor/misc/foot/none.vox", -2.5f, -3.5f, -2f, false, "foot_r", false);
+        return parts;
+    }
+
+    private static void addVox(List<Part> parts, Path root, String relative,
+                               float ox, float oy, float oz, boolean mirror, String bone, boolean left) {
+        Path file = root.resolve(relative);
+        if (!Files.isRegularFile(file)) {
+            return;
+        }
+        parts.add(new Part(file, ox, oy, oz, mirror, bone, left));
+    }
+
+    /** Standing positions for the still tile. The large view poses the same bones. */
+    private static float[] characterBone(String bone, String species) {
+        if ("main".equals(bone)) {
+            float chestZ = 8f;
+            int slash = species.lastIndexOf('/');
+            String tool = slash < 0 ? "sword" : species.substring(slash + 1);
+            return switch (tool) {
+                case "bow" -> new float[] {0f, -5f, chestZ + 6f};
+                case "staff" -> new float[] {2f, -5f, chestZ - 1f};
+                default -> new float[] {-7f, -5f, chestZ + 15f};
+            };
+        }
+        return characterBone(bone);
+    }
+
+    private static float[] characterBone(String bone) {
+        float chestZ = 8f;
+        return switch (bone) {
+            case "chest" -> new float[] {0f, 0f, chestZ};
+            case "head" -> new float[] {0f, -2.3f, chestZ + 9.5f};
+            case "belt" -> new float[] {0f, 0f, chestZ - 2f};
+            case "shorts" -> new float[] {0f, 0f, chestZ - 5f};
+            case "hand_l" -> new float[] {-7f, -0.25f, chestZ + 0.5f};
+            case "hand_r" -> new float[] {7f, -0.25f, chestZ + 0.5f};
+            case "foot_l" -> new float[] {-3.4f, 0.5f, 2f};
+            case "foot_r" -> new float[] {3.4f, 0.5f, 2f};
+            case "main" -> new float[] {-7f, -5f, chestZ + 15f};
+            default -> null;
+        };
     }
 
     /**
@@ -320,8 +406,15 @@ final class NpcFigure {
             VoxReader.VoxModel model = scene.models.get(part.model);
             int index = combined.models.size();
             combined.models.add(model);
-            float[] bone = FigurePose.bone(assembly.species, part.bone, part.left);
-            float[] boneRot = GolemPose.rot(assembly.species, part.bone);
+            float[] bone = "character".equals(assembly.body)
+                    ? characterBone(part.bone, assembly.species)
+                    : FigurePose.bone(assembly.species, part.bone, part.left);
+            if (bone == null) {
+                continue;
+            }
+            float[] boneRot = "character".equals(assembly.body)
+                    ? null
+                    : GolemPose.rot(assembly.species, part.bone);
             if (boneRot == null) {
                 boneRot = AnimalPose.rot(assembly.species, part.bone);
             }

@@ -96,6 +96,9 @@ public final class BirdIdle {
 
     /** One bird, ready to idle in the large view. */
     public static final class Rig implements FigureAnim {
+        private static final String[] CLIPS = {
+                "No anim", "Idle", "Walk", "Run", "Fly", "Swim", "Strike", "Stunned"
+        };
         final Part[] parts;
         private final float[] attr;
         private final Matrix4[] local = new Matrix4[COUNT];
@@ -129,10 +132,12 @@ public final class BirdIdle {
                 curRot[i] = new Quaternion(0f, 0f, 0f, 1f);
                 tgtRot[i] = new Quaternion(0f, 0f, 0f, 1f);
             }
+            clip = 1;
             pose(0f);
             snap();
             compose();
             recenter.setToTranslation(-mid(0), -mid(1), -mid(2));
+            clip = 0;
         }
 
         public void tick(float dt) {
@@ -168,17 +173,17 @@ public final class BirdIdle {
 
         @Override
         public int clipCount() {
-            return 2;
+            return CLIPS.length;
         }
 
         @Override
         public String clipName(int index) {
-            return index == 0 ? "Idle" : "Run";
+            return CLIPS[Math.max(0, Math.min(index, CLIPS.length - 1))];
         }
 
         @Override
         public void setClip(int index) {
-            clip = index <= 0 ? 0 : 1;
+            clip = Math.max(0, Math.min(index, CLIPS.length - 1));
             time = 0f;
         }
 
@@ -188,9 +193,36 @@ public final class BirdIdle {
         }
 
         private void pose(float t) {
-            if (clip == 1) {
-                run(t);
-                return;
+            switch (CLIPS[clip]) {
+                case "No anim" -> {
+                    return;
+                }
+                case "Walk" -> {
+                    run(t * 0.5f);
+                    return;
+                }
+                case "Run" -> {
+                    run(t);
+                    return;
+                }
+                case "Fly" -> {
+                    fly(t);
+                    return;
+                }
+                case "Swim" -> {
+                    swim(t);
+                    return;
+                }
+                case "Strike" -> {
+                    strike(t);
+                    return;
+                }
+                case "Stunned" -> {
+                    stunned(t);
+                    return;
+                }
+                default -> {
+                }
             }
             float wave = (float) Math.cos(t * 4.5);
             float phase = (float) Math.floor(t / 2.0 + t / 8.0);
@@ -262,6 +294,165 @@ public final class BirdIdle {
                     qa.setFromAxisRad(1f, 0f, 0f, -0.2f * speednorm + foot2a * 0.75f)
                             .mul(qb.setFromAxisRad(0f, 1f, 0f, -Math.max(foot2b, 0f) * 0.6f)),
                     scaler * 0.99f);
+        }
+
+        private void fly(float t) {
+            float fast = (float) Math.sin(t * 4.0);
+            float flap1 = flap(t, 0f);
+            float flap2 = flap(t, -1.7f);
+            float flap3 = flap(t, -2.0f);
+            float flap4 = flap(t, -2.4f);
+            float scaler = attr[15];
+            set(HEAD, 0f, attr[2], attr[3],
+                    qa.setFromAxisRad(1f, 0f, 0f, -0.5f + fast * 0.05f), 0.99f);
+            set(CHEST, 0f, attr[0], attr[1] - flap4 * 1.5f,
+                    qa.setFromAxisRad(1f, 0f, 0f, 0.2f - flap1 * 0.2f), scaler * 0.99f);
+            set(TAIL, 0f, attr[4], attr[5],
+                    qa.setFromAxisRad(1f, 0f, 0f, -flap2 * 0.2f + 0.1f), 1.01f);
+            set(WING_IN_L, -attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, -flap1 * 1.9f + 0.2f)
+                            .mul(qb.setFromAxisRad(1f, 0f, 0f, 0.4f)), 1f);
+            set(WING_IN_R, attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, flap1 * 1.9f - 0.2f)
+                            .mul(qb.setFromAxisRad(1f, 0f, 0f, 0.4f)), 1f);
+            set(WING_OUT_L, -attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, -flap3 * 1.2f - 0.3f), 1f);
+            set(WING_OUT_R, attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, flap3 * 1.2f + 0.3f), 1f);
+            set(LEG_L, -attr[12], attr[13], attr[14] - flap4 * 1.5f,
+                    qa.setFromAxisRad(1f, 0f, 0f, flap1 * -0.1f), scaler * 0.99f);
+            set(LEG_R, attr[12], attr[13], attr[14] - flap4 * 1.5f,
+                    qa.setFromAxisRad(1f, 0f, 0f, flap1 * -0.1f), scaler * 0.99f);
+        }
+
+        private void swim(float t) {
+            float phase = (float) Math.floor(t / 2.0 + t / 8.0);
+            float lookX = (float) Math.sin(phase * 7331.0) * 0.5f;
+            float lookY = (float) Math.sin(phase * 1337.0) * 0.25f;
+            float slow = (float) Math.cos(t * 4.5);
+            float fast = (float) Math.sin(t * 6.0);
+            float fastCos = (float) Math.cos(t * 6.0);
+            float scaler = attr[15];
+            set(HEAD, 0f, attr[2], attr[3],
+                    qa.setFromAxisRad(0f, 0f, 1f, lookX)
+                            .mul(qb.setFromAxisRad(1f, 0f, 0f, -Math.abs(lookY) + slow * 0.01f)),
+                    0.99f);
+            set(CHEST, 0f, attr[0], attr[1] + slow * 0.06f + 1.5f, identity, scaler * 0.99f);
+            set(TAIL, 0f, attr[4], attr[5], qa.setFromAxisRad(1f, 0f, 0f, 0.6f), 1.01f);
+            set(WING_IN_L, -attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, -0.8f + slow * 0.06f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, 0.2f)), 1f);
+            set(WING_IN_R, attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, 0.8f - slow * 0.06f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, -0.2f)), 1f);
+            set(WING_OUT_L, -attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, -0.4f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, 0.2f)), 1f);
+            set(WING_OUT_R, attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, 0.4f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, -0.2f)), 1f);
+            set(LEG_L, -attr[12], attr[13], attr[14],
+                    qa.setFromAxisRad(1f, 0f, 0f, -0.8f + fast * 0.5f), scaler * 0.99f);
+            set(LEG_R, attr[12], attr[13], attr[14],
+                    qa.setFromAxisRad(1f, 0f, 0f, -0.8f + fastCos * 0.5f), scaler * 0.99f);
+        }
+
+        private static float flap(float t, float off) {
+            float freq = 8f;
+            return 7f / 16f * (float) Math.sin(freq * t + off)
+                    + 7f / 64f * (float) Math.sin(freq * 2f * t + off)
+                    + 1f / 48f * (float) Math.sin(freq * 3f * t + off);
+        }
+
+        private void stunned(float t) {
+            float cycle = 1.15f;
+            float u = t - cycle * (float) Math.floor(t / cycle);
+            float base;
+            float twitch;
+            float pull;
+            if (u < 0.35f) {
+                float along = u / 0.35f;
+                base = (float) Math.pow(along, 0.1);
+                twitch = along;
+                pull = 1f;
+            } else {
+                float along = Math.min(1f, (u - 0.35f) / 0.8f);
+                base = 1f;
+                twitch = 1f;
+                pull = 1f - (float) Math.pow(along, 4.0);
+            }
+            float shiver = (float) Math.sin(twitch * 20f) * pull;
+            float wave = (float) Math.cos(t * 4.5);
+            float scaler = attr[15];
+            float held = base * pull;
+            set(HEAD, 0f, attr[2], attr[3],
+                    qa.setFromAxisRad(0f, 0f, 1f, shiver * 0.8f)
+                            .mul(qb.setFromAxisRad(1f, 0f, 0f, wave * 0.01f)), 0.99f);
+            set(CHEST, 0f, attr[0] * scaler, (attr[1] + wave * 0.06f) * scaler,
+                    qa.setFromAxisRad(1f, 0f, 0f, base * 0.5f), scaler * 0.99f);
+            set(TAIL, 0f, attr[4], attr[5], identity, 1.01f);
+            set(WING_IN_L, -attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, wave * 0.06f + shiver * 0.8f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, 0.2f - held)), 1f);
+            set(WING_IN_R, attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, wave * 0.06f - shiver * 0.8f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, -0.2f + held)), 1f);
+            set(WING_OUT_L, -attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, -0.2f).mul(qb.setFromAxisRad(0f, 0f, 1f, 0.2f)), 1f);
+            set(WING_OUT_R, attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, 0.2f).mul(qb.setFromAxisRad(0f, 0f, 1f, -0.2f)), 1f);
+            set(LEG_L, -attr[12], attr[13], attr[14],
+                    qa.setFromAxisRad(1f, 0f, 0f, held * 0.8f), scaler * 0.99f);
+            set(LEG_R, attr[12], attr[13], attr[14], identity, scaler * 0.99f);
+        }
+
+        private void strike(float t) {
+            float along = strikeAlong(t);
+            float slow = (float) Math.cos(t * 4.5);
+            float scaler = attr[15];
+            set(HEAD, 0f, attr[2], attr[3],
+                    qa.setFromAxisRad(1f, 0f, 0f, along * -0.4f)
+                            .mul(qb.setFromAxisRad(0f, 1f, 0f, along * 0.5f)), 0.99f);
+            set(CHEST, 0f, attr[0], attr[1] + slow * 0.06f + along,
+                    qa.setFromAxisRad(1f, 0f, 0f, along * -0.3f), scaler * 0.99f);
+            set(TAIL, 0f, attr[4], attr[5], qa.setFromAxisRad(1f, 0f, 0f, along * -0.2f), 1.01f);
+            set(WING_IN_L, -attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, -1f + slow * 0.06f + along * 1.5f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, 0.2f)), 1f);
+            set(WING_IN_R, attr[6], attr[7], attr[8],
+                    qa.setFromAxisRad(0f, 1f, 0f, 1f - slow * 0.06f - along * 1.5f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, -0.2f)), 1f);
+            set(WING_OUT_L, -attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, -0.2f + along * -0.3f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, 0.2f)), 1f);
+            set(WING_OUT_R, attr[9], attr[10], attr[11],
+                    qa.setFromAxisRad(0f, 1f, 0f, 0.2f + along * 0.3f)
+                            .mul(qb.setFromAxisRad(0f, 0f, 1f, -0.2f)), 1f);
+            set(LEG_L, -attr[12], attr[13], attr[14], identity, scaler * 0.99f);
+            set(LEG_R, attr[12], attr[13], attr[14], identity, scaler * 0.99f);
+        }
+
+        /** How far through the peck: wind up, then the hit, then back. */
+        private static float strikeAlong(float t) {
+            float cycle = 1.35f;
+            float u = t - cycle * (float) Math.floor(t / cycle);
+            float base1;
+            float base2;
+            float recover;
+            if (u < 0.4f) {
+                base1 = (float) Math.pow(u / 0.4f, 0.25);
+                base2 = 0f;
+                recover = 0f;
+            } else if (u < 0.65f) {
+                base1 = 1f;
+                base2 = (u - 0.4f) / 0.25f;
+                recover = 0f;
+            } else {
+                base1 = 1f;
+                base2 = 1f;
+                recover = (float) Math.pow((u - 0.65f) / 0.7f, 4.0);
+            }
+            return (base2 - base1 * 0.3f) * (1f - recover);
         }
 
         private void snap() {

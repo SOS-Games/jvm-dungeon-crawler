@@ -32,6 +32,7 @@ public class JvmDcApp extends ApplicationAdapter {
     private static final int CLEAR_W = 64;
     private static final String HINT = "Scroll to browse. Click a model.";
     private static final int BTN_W = 96;
+    private static final int CLIP_W = 112;
     private static final int BTN_H = 20;
     private static final long LOAD_BUDGET_NS = 8_000_000L;
 
@@ -276,7 +277,14 @@ public class JvmDcApp extends ApplicationAdapter {
         mode = Mode.VIEW;
         catalog.load(entry);
         if (entry.rig != null) {
-            entry.rig.setClip(0);
+            int start = 0;
+            for (int i = 0; i < entry.rig.clipCount(); i++) {
+                if ("Idle".equals(entry.rig.clipName(i))) {
+                    start = i;
+                    break;
+                }
+            }
+            entry.rig.setClip(start);
         }
         placeDefaultView(entry.mesh != null ? entry.mesh.span : 8f);
     }
@@ -390,10 +398,11 @@ public class JvmDcApp extends ApplicationAdapter {
 
     private void renderView(int width, int height) {
         String path = selected == null ? "" : selected.path;
-        int chips = BTN_W * 6 + 30 + 12;
+        int chips = BTN_W * 4 + 6 * 3 + 12;
         layout.setText(font, path, Color.BLACK, width - 24 - chips, Align.left, true);
         float pathHeight = layout.height;
         int header = (int) (16 + pathHeight + 22);
+        viewHeaderH = header;
         int viewH = Math.max(1, height - header);
         renderer.begin();
         renderer.tile(0, 0, width, viewH);
@@ -410,7 +419,7 @@ public class JvmDcApp extends ApplicationAdapter {
             if (showScene) {
                 renderer.placeLamp(selected.mesh.span);
             }
-            if (selected.rig != null) {
+            if (selected.rig != null && !"No anim".equals(selected.rig.clipName(selected.rig.clip()))) {
                 selected.rig.tick(Gdx.graphics.getDeltaTime());
                 selected.rig.draw(renderer, camera, model);
             } else {
@@ -442,11 +451,13 @@ public class JvmDcApp extends ApplicationAdapter {
         chip(spinBtn, bottom, "Spin", drag == Drag.SPIN);
         chip(slideBtn, bottom, "Slide", drag == Drag.SLIDE);
         chip(orbitBtn, bottom, "Orbit", drag == Drag.ORBIT);
-        if (selected != null && selected.rig != null && selected.rig.clipCount() > 1) {
-            int runBtn = sceneBtn - 6 - BTN_W;
-            int idleBtn = runBtn - 6 - BTN_W;
-            chip(idleBtn, bottom, selected.rig.clipName(0), selected.rig.clip() == 0);
-            chip(runBtn, bottom, selected.rig.clipName(1), selected.rig.clip() == 1);
+        if (selected != null && selected.rig != null) {
+            int top = viewHeaderH;
+            for (int i = 0; i < selected.rig.clipCount(); i++) {
+                int row = height - top - BTN_H;
+                chip(12, row, CLIP_W, BTN_H, selected.rig.clipName(i), selected.rig.clip() == i);
+                top += BTN_H + 6;
+            }
         }
         batch.end();
     }
@@ -570,30 +581,26 @@ public class JvmDcApp extends ApplicationAdapter {
         return -1;
     }
 
-    /** 0 is Idle, 1 is Run or Swim. -1 is neither. */
+    /** Clip index under the pointer, or -1. The list sits on the left under the path. */
     private int clipAt(int x, int y) {
-        if (selected == null || selected.rig == null || selected.rig.clipCount() < 2) {
+        if (selected == null || selected.rig == null) {
             return -1;
         }
-        if (y < 4 || y >= 4 + BTN_H) {
+        if (x < 12 || x >= 12 + CLIP_W) {
             return -1;
         }
-        int width = Gdx.graphics.getWidth();
-        int orbitBtn = width - 12 - BTN_W;
-        int slideBtn = orbitBtn - 6 - BTN_W;
-        int spinBtn = slideBtn - 6 - BTN_W;
-        int sceneBtn = spinBtn - 6 - BTN_W;
-        int runBtn = sceneBtn - 6 - BTN_W;
-        int idleBtn = runBtn - 6 - BTN_W;
-        if (x >= idleBtn && x < idleBtn + BTN_W) {
-            return 0;
-        }
-        if (x >= runBtn && x < runBtn + BTN_W) {
-            return 1;
+        int top = viewHeaderH;
+        int n = selected.rig.clipCount();
+        for (int i = 0; i < n; i++) {
+            if (y >= top && y < top + BTN_H) {
+                return i;
+            }
+            top += BTN_H + 6;
         }
         return -1;
     }
 
+    private int viewHeaderH = 80;
     private int fieldX;
     private int fieldW;
     private int clearX;
