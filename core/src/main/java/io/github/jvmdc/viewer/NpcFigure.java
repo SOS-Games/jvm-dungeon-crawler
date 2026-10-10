@@ -59,12 +59,15 @@ final class NpcFigure {
         final String name;
         final String path;
         final String species;
+        /** Body family such as bird_medium or biped_small. Null when this figure stays still. */
+        final String body;
         final List<Part> parts;
 
-        Assembly(String name, String path, String species, List<Part> parts) {
+        Assembly(String name, String path, String species, List<Part> parts, String body) {
             this.name = name;
             this.path = path;
             this.species = species;
+            this.body = body;
             this.parts = parts;
         }
     }
@@ -115,7 +118,8 @@ final class NpcFigure {
                     name,
                     "assets/voxygen/voxel/npc/" + folder,
                     species,
-                    parts));
+                    parts,
+                    "biped_small"));
         }
         assemblies.addAll(largeBipeds(assetsRoot));
         assemblies.addAll(animals(assetsRoot));
@@ -158,7 +162,8 @@ final class NpcFigure {
             }
             String folder = npcFolder(parts.get(0).file, assetsRoot);
             String label = rust.replaceAll("([a-z])([A-Z])", "$1 $2").toLowerCase() + " " + sex;
-            assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder, pose, parts));
+            assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder, pose, parts,
+                    "biped_large"));
         }
         return assemblies;
     }
@@ -180,6 +185,7 @@ final class NpcFigure {
                 {"dragon_central_manifest.json", "dragon_lateral_manifest.json", "none"},
                 {"arthropod_central_manifest.json", "arthropod_lateral_manifest.json", "ar"},
                 {"crustacean_central_manifest.json", "crustacean_lateral_manifest.json", "bool"},
+                {"golem_central_manifest.json", "golem_lateral_manifest.json", "none"},
         };
         List<Assembly> assemblies = new ArrayList<>();
         for (String[] pair : manifests) {
@@ -194,6 +200,7 @@ final class NpcFigure {
             Path lateralFile = jsonManifest(pair[1]);
             JsonValue lateral = Files.isRegularFile(lateralFile) ? unwrap(parse(lateralFile)) : null;
             String mode = "none".equals(pair[2]) ? null : pair[2];
+            String family = pair[0].replace("_central_manifest.json", "");
             for (JsonValue body = central.child; body != null; body = body.next) {
                 String key = body.name();
                 int comma = key.indexOf(',');
@@ -214,7 +221,7 @@ final class NpcFigure {
                 String folder = npcFolder(parts.get(0).file, assetsRoot);
                 String label = rust.replaceAll("([a-z])([A-Z])", "$1 $2").toLowerCase() + " " + sex;
                 assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder,
-                        rust.toLowerCase() + "/" + sex, parts));
+                        rust.toLowerCase() + "/" + sex, parts, family));
             }
         }
         return assemblies;
@@ -314,7 +321,10 @@ final class NpcFigure {
             int index = combined.models.size();
             combined.models.add(model);
             float[] bone = FigurePose.bone(assembly.species, part.bone, part.left);
-            float[] boneRot = AnimalPose.rot(assembly.species, part.bone);
+            float[] boneRot = GolemPose.rot(assembly.species, part.bone);
+            if (boneRot == null) {
+                boneRot = AnimalPose.rot(assembly.species, part.bone);
+            }
             if (hold != null && "hand".equals(part.bone)) {
                 bone = part.left ? hold.leftPos : hold.rightPos;
                 boneRot = part.left ? hold.leftRot : hold.rightRot;

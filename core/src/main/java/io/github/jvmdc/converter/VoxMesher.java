@@ -26,9 +26,23 @@ public class VoxMesher {
         public final Mesh[] parts;
         public final float span;
 
+        /** Bounds before the mesh is moved so its middle sits at the origin. */
+        public final float minX, minY, minZ, maxX, maxY, maxZ;
+
         VoxMesh(Mesh[] parts, float span) {
+            this(parts, span, 0f, 0f, 0f, 0f, 0f, 0f);
+        }
+
+        VoxMesh(Mesh[] parts, float span, float minX, float minY, float minZ,
+                float maxX, float maxY, float maxZ) {
             this.parts = parts;
             this.span = span;
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
         }
 
         public void dispose() {
@@ -72,7 +86,43 @@ public class VoxMesher {
             }
             builder.addModel(model, instance.rotation, instance.translation);
         }
-        return builder.finish();
+        return builder.finish(true);
+    }
+
+    /**
+     * One bone, still in voxel space (Z up). The manifest offset is added as-is.
+     * A mirrored limb flips the voxels instead of the offset.
+     */
+    public static VoxMesh buildLocal(VoxReader.VoxModel model, float ox, float oy, float oz, boolean mirror) {
+        if (model.grid == null) {
+            return new VoxMesh(new Mesh[0], 1f);
+        }
+        VoxReader.VoxModel source = model;
+        if (mirror) {
+            source = flipX(model);
+        }
+        Builder builder = new Builder(model.palette);
+        builder.local = true;
+        // The faces are rebuilt from the flipped grid, so the outside still faces out.
+        builder.addModel(source, new float[] {1, 0, 0, 0, 1, 0, 0, 0, 1}, new float[] {ox, oy, oz});
+        return builder.finish(false);
+    }
+
+    private static VoxReader.VoxModel flipX(VoxReader.VoxModel model) {
+        VoxReader.VoxModel copy = new VoxReader.VoxModel();
+        copy.sizeX = model.sizeX;
+        copy.sizeY = model.sizeY;
+        copy.sizeZ = model.sizeZ;
+        copy.palette = model.palette;
+        copy.grid = new byte[model.sizeX][model.sizeY][model.sizeZ];
+        for (int x = 0; x < model.sizeX; x++) {
+            for (int y = 0; y < model.sizeY; y++) {
+                for (int z = 0; z < model.sizeZ; z++) {
+                    copy.grid[model.sizeX - 1 - x][y][z] = model.grid[x][y][z];
+                }
+            }
+        }
+        return copy;
     }
 
     private static final class Builder {
@@ -91,6 +141,8 @@ public class VoxMesher {
         private final float[] p1 = new float[3];
         private final float[] p2 = new float[3];
         private final float[] p3 = new float[3];
+        private boolean local;
+        private boolean flipWinding;
         private final VertexAttributes attributes = new VertexAttributes(
                 VertexAttribute.Position(),
                 VertexAttribute.Normal(),
@@ -163,15 +215,21 @@ public class VoxMesher {
          */
         private void corner(VoxReader.VoxModel model, float[] rotation, float[] translation,
                             int x, int y, int z, float[] out) {
-            float lx = x - model.sizeX * 0.5f;
-            float ly = y - model.sizeY * 0.5f;
-            float lz = z - model.sizeZ * 0.5f;
+            float lx = local ? x : x - model.sizeX * 0.5f;
+            float ly = local ? y : y - model.sizeY * 0.5f;
+            float lz = local ? z : z - model.sizeZ * 0.5f;
             float wx = rotation[0] * lx + rotation[1] * ly + rotation[2] * lz + translation[0];
             float wy = rotation[3] * lx + rotation[4] * ly + rotation[5] * lz + translation[1];
             float wz = rotation[6] * lx + rotation[7] * ly + rotation[8] * lz + translation[2];
-            out[0] = wx;
-            out[1] = wz;
-            out[2] = -wy;
+            if (local) {
+                out[0] = wx;
+                out[1] = wy;
+                out[2] = wz;
+            } else {
+                out[0] = wx;
+                out[1] = wz;
+                out[2] = -wy;
+            }
         }
 
         private void addQuad(VoxReader.VoxModel model, byte[][][] grid,
@@ -210,7 +268,7 @@ public class VoxMesher {
             }
             // A mirror (left limbs) flips the triangle order. Swap a corner and
             // the normal so the outside face stays the one that is drawn.
-            if (determinant(rotation) < 0f) {
+            if (flipWinding || determinant(rotation) < 0f) {
                 float sx = p1[0];
                 float sy = p1[1];
                 float sz = p1[2];
@@ -334,7 +392,7 @@ public class VoxMesher {
             vertices.add(ao);
         }
 
-        VoxMesh finish() {
+        VoxMesh finish(boolean center) {
             if (vertices.size == 0 && vertParts.size() == 1) {
                 return new VoxMesh(new Mesh[0], 1f);
             }
@@ -349,10 +407,12 @@ public class VoxMesher {
                     continue;
                 }
                 float[] items = verts.items;
-                for (int i = 0; i < verts.size; i += VERTEX_SIZE) {
-                    items[i] -= cx;
-                    items[i + 1] -= cy;
-                    items[i + 2] -= cz;
+                if (center) {
+                    for (int i = 0; i < verts.size; i += VERTEX_SIZE) {
+                        items[i] -= cx;
+                        items[i + 1] -= cy;
+                        items[i + 2] -= cz;
+                    }
                 }
                 Mesh mesh = new Mesh(true, verts.size / VERTEX_SIZE, inds.size, attributes);
                 mesh.setVertices(items, 0, verts.size);
@@ -364,7 +424,7 @@ public class VoxMesher {
                 span = Math.max(maxX - minX, Math.max(maxY - minY, maxZ - minZ));
                 span = Math.max(1f, span);
             }
-            return new VoxMesh(meshes.toArray(new Mesh[0]), span);
+            return new VoxMesh(meshes.toArray(new Mesh[0]), span, minX, minY, minZ, maxX, maxY, maxZ);
         }
     }
 }

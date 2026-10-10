@@ -27,6 +27,13 @@ public class Converter {
 
     public static void main(String[] args) {
         Properties p = getLocalPropeties();
+        if (args.length > 0 && !"help".equals(args[0])) {
+            Path root = Path.of(p.getProperty("velorenPath"));
+            for (String arg : args) {
+                convertAsset(Path.of(arg), root);
+            }
+            return;
+        }
         getRonFiles(p);
         //printVoxData(p);
     }

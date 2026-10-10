@@ -54,6 +54,27 @@ final class LargePose {
     private LargePose() {
     }
 
+    /**
+     * Local idle offsets for one species: head, jaw, upper, lower, tail, shoulder,
+     * hand, leg, foot, then 1 if the body floats. Null when this is not a large biped.
+     */
+    static float[] local(String species) {
+        Attr attr = SPECIES.get(species);
+        if (attr == null) {
+            return null;
+        }
+        return new float[] {
+                attr.headY, attr.headZ, attr.jawY, attr.jawZ,
+                attr.upperY, attr.upperZ, attr.lowerY, attr.lowerZ,
+                attr.tailY, attr.tailZ,
+                attr.shoulderX, attr.shoulderY, attr.shoulderZ,
+                attr.handX, attr.handY, attr.handZ,
+                attr.legX, attr.legY, attr.legZ,
+                attr.footX, attr.footY, attr.footZ,
+                attr.floating ? 1f : 0f
+        };
+    }
+
     /** Null when this is not a large biped. */
     static float[] bone(String species, String bone) {
         Attr attr = SPECIES.get(species);

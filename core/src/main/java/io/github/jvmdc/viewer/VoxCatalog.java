@@ -30,6 +30,8 @@ public final class VoxCatalog {
         public final boolean npc;
         final NpcFigure.Assembly figure;
         public VoxMesher.VoxMesh mesh;
+        /** Animals idle in the large view. Null for a still figure. */
+        public FigureAnim rig;
         public boolean failed;
         public String error;
 
@@ -91,6 +93,7 @@ public final class VoxCatalog {
             Entry entry = new Entry(figure.name, figure.path, null, figure);
             try {
                 entry.mesh = NpcFigure.build(figure);
+                entry.rig = loadRig(figure);
                 for (NpcFigure.Part part : figure.parts) {
                 if (part.tool != null) {
                     armed++;
@@ -119,6 +122,7 @@ public final class VoxCatalog {
         try {
             if (entry.figure != null) {
                 entry.mesh = NpcFigure.build(entry.figure);
+                entry.rig = loadRig(entry.figure);
             } else {
                 VoxReader.VoxScene scene = VoxReader.readScene(entry.file);
                 entry.mesh = VoxMesher.build(scene);
@@ -130,11 +134,31 @@ public final class VoxCatalog {
         }
     }
 
+    /** Idle is extra. A bad pose leaves the still mesh. */
+    private static FigureAnim loadRig(NpcFigure.Assembly figure) {
+        if (figure == null || figure.body == null) {
+            return null;
+        }
+        try {
+            if ("bird_medium".equals(figure.body)) {
+                return BirdIdle.load(figure);
+            }
+            return AnimalIdle.load(figure);
+        } catch (RuntimeException | IOException e) {
+            Gdx.app.error("JvmDc", "idle " + figure.path, e);
+            return null;
+        }
+    }
+
     public void dispose() {
         for (Entry entry : entries) {
             if (entry.mesh != null) {
                 entry.mesh.dispose();
                 entry.mesh = null;
+            }
+            if (entry.rig != null) {
+                entry.rig.dispose();
+                entry.rig = null;
             }
         }
     }

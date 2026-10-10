@@ -86,11 +86,27 @@ final class FigurePose {
         GRIP.put(species, new float[] {x, z});
     }
 
+    /** Local idle offsets, or the myrmidon row when the species is missing. Last value is 1 for winged feet. */
+    static float[] local(String species) {
+        Attr attr = SPECIES.getOrDefault(species, SPECIES.get("myrmidon"));
+        return new float[] {
+                attr.headY, attr.headZ, attr.chestY, attr.chestZ,
+                attr.pantsY, attr.pantsZ, attr.tailY, attr.tailZ,
+                attr.handX, attr.handY, attr.handZ,
+                attr.footX, attr.footY, attr.footZ,
+                "bloodmoon_heiress".equals(species) ? 1f : 0f
+        };
+    }
+
     /** Voxel-space position of a bone. x is right, y is forward, z is up. */
     static float[] bone(String species, String bone, boolean left) {
         float[] large = LargePose.bone(species, bone);
         if (large != null) {
             return large;
+        }
+        float[] golem = GolemPose.bone(species, bone);
+        if (golem != null) {
+            return golem;
         }
         float[] animal = AnimalPose.bone(species, bone);
         if (animal != null) {

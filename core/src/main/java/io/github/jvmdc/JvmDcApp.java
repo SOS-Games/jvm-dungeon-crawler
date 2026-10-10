@@ -89,7 +89,8 @@ public class JvmDcApp extends ApplicationAdapter {
             lastX = screenX;
             lastY = screenY;
             this.button = button;
-            pressOnModeChip = mode == Mode.VIEW && viewModeAt(screenX, screenY) >= 0;
+            pressOnModeChip = mode == Mode.VIEW
+                    && (viewModeAt(screenX, screenY) >= 0 || clipAt(screenX, screenY) >= 0);
             return true;
         }
 
@@ -126,6 +127,10 @@ public class JvmDcApp extends ApplicationAdapter {
             int dx = screenX - pressX;
             int dy = screenY - pressY;
             if (button == Input.Buttons.LEFT && mode == Mode.VIEW && dx * dx + dy * dy < 36) {
+                int clipPick = clipAt(screenX, screenY);
+                if (clipPick >= 0 && selected != null && selected.rig != null) {
+                    selected.rig.setClip(clipPick);
+                }
                 int picked = viewModeAt(screenX, screenY);
                 if (picked == 0) {
                     drag = Drag.SPIN;
@@ -270,6 +275,9 @@ public class JvmDcApp extends ApplicationAdapter {
         slideZ = 0f;
         mode = Mode.VIEW;
         catalog.load(entry);
+        if (entry.rig != null) {
+            entry.rig.setClip(0);
+        }
         placeDefaultView(entry.mesh != null ? entry.mesh.span : 8f);
     }
 
@@ -382,7 +390,7 @@ public class JvmDcApp extends ApplicationAdapter {
 
     private void renderView(int width, int height) {
         String path = selected == null ? "" : selected.path;
-        int chips = BTN_W * 4 + 18 + 12;
+        int chips = BTN_W * 6 + 30 + 12;
         layout.setText(font, path, Color.BLACK, width - 24 - chips, Align.left, true);
         float pathHeight = layout.height;
         int header = (int) (16 + pathHeight + 22);
@@ -402,7 +410,12 @@ public class JvmDcApp extends ApplicationAdapter {
             if (showScene) {
                 renderer.placeLamp(selected.mesh.span);
             }
-            renderer.draw(camera, selected.mesh.parts, model);
+            if (selected.rig != null) {
+                selected.rig.tick(Gdx.graphics.getDeltaTime());
+                selected.rig.draw(renderer, camera, model);
+            } else {
+                renderer.draw(camera, selected.mesh.parts, model);
+            }
             if (showScene) {
                 renderer.drawLamp(camera, selected.mesh.span);
             }
@@ -429,6 +442,12 @@ public class JvmDcApp extends ApplicationAdapter {
         chip(spinBtn, bottom, "Spin", drag == Drag.SPIN);
         chip(slideBtn, bottom, "Slide", drag == Drag.SLIDE);
         chip(orbitBtn, bottom, "Orbit", drag == Drag.ORBIT);
+        if (selected != null && selected.rig != null && selected.rig.clipCount() > 1) {
+            int runBtn = sceneBtn - 6 - BTN_W;
+            int idleBtn = runBtn - 6 - BTN_W;
+            chip(idleBtn, bottom, selected.rig.clipName(0), selected.rig.clip() == 0);
+            chip(runBtn, bottom, selected.rig.clipName(1), selected.rig.clip() == 1);
+        }
         batch.end();
     }
 
@@ -547,6 +566,30 @@ public class JvmDcApp extends ApplicationAdapter {
         }
         if (x >= orbitBtn && x < orbitBtn + BTN_W) {
             return 2;
+        }
+        return -1;
+    }
+
+    /** 0 is Idle, 1 is Run or Swim. -1 is neither. */
+    private int clipAt(int x, int y) {
+        if (selected == null || selected.rig == null || selected.rig.clipCount() < 2) {
+            return -1;
+        }
+        if (y < 4 || y >= 4 + BTN_H) {
+            return -1;
+        }
+        int width = Gdx.graphics.getWidth();
+        int orbitBtn = width - 12 - BTN_W;
+        int slideBtn = orbitBtn - 6 - BTN_W;
+        int spinBtn = slideBtn - 6 - BTN_W;
+        int sceneBtn = spinBtn - 6 - BTN_W;
+        int runBtn = sceneBtn - 6 - BTN_W;
+        int idleBtn = runBtn - 6 - BTN_W;
+        if (x >= idleBtn && x < idleBtn + BTN_W) {
+            return 0;
+        }
+        if (x >= runBtn && x < runBtn + BTN_W) {
+            return 1;
         }
         return -1;
     }
