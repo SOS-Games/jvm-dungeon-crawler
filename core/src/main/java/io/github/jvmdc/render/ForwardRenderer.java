@@ -2,10 +2,14 @@ package io.github.jvmdc.render;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.graphics.glutils.GLFrameBuffer;
 import com.badlogic.gdx.graphics.glutils.HdpiUtils;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Matrix4;
@@ -13,20 +17,33 @@ import com.badlogic.gdx.math.Vector3;
 
 /**
  * Draws voxel meshes. A browser tile and the large view use the same shader:
- * Veloren's sun, a nearby yellow lamp, corner shadows, and a tone curve.
+ * Veloren's sun, a nearby yellow lamp, and corner shadows. The picture is
+ * stored bright, then a tone curve brings it down for the screen. The large
+ * view also blurs that bright picture into a soft halo around glowing voxels.
  * The backdrop is green toward the ground and blue overhead, with the sun
- * drawn in that blue. Glowing voxels add their own light. The model matrix
- * is how the large view spins a mesh.
+ * drawn in that blue. The model matrix is how the large view spins a mesh.
  */
 public final class ForwardRenderer {
     /** Direction toward the sun, Y-up. High enough to sit in the blue, still inside the default view. */
     static final Vector3 SUN_TO = new Vector3(-0.37f, 0.22f, 0.90f).nor();
 
+    private static final int BLOOM_LEVELS = 5;
+    private static final float BLOOM_MIX = 0.2f;
+    private static final float[] CLEAR_WINDOW = displayToHdr(0.62f, 0.64f, 0.68f);
+    private static final float[] CLEAR_TILE = displayToHdr(0.40f, 0.42f, 0.46f);
+
     private final ShaderProgram shader;
     private final ShaderProgram lampShader;
     private final ShaderProgram skyShader;
+    private final ShaderProgram downShader;
+    private final ShaderProgram upShader;
+    private final ShaderProgram postShader;
     private final Mesh lampMesh;
     private final Mesh skyMesh;
+    private FrameBuffer hdr;
+    private final FrameBuffer[] bloom = new FrameBuffer[BLOOM_LEVELS];
+    private int bufW;
+    private int bufH;
     private final Matrix4 mvp = new Matrix4();
     private final Matrix4 lampXform = new Matrix4();
     private final Vector3 lampPos = new Vector3();
@@ -45,15 +62,30 @@ public final class ForwardRenderer {
         if (!skyShader.isCompiled()) {
             throw new IllegalStateException(skyShader.getLog());
         }
+        downShader = new ShaderProgram(BLIT_VERT, DOWN_FRAG);
+        if (!downShader.isCompiled()) {
+            throw new IllegalStateException(downShader.getLog());
+        }
+        upShader = new ShaderProgram(BLIT_VERT, UP_FRAG);
+        if (!upShader.isCompiled()) {
+            throw new IllegalStateException(upShader.getLog());
+        }
+        postShader = new ShaderProgram(BLIT_VERT, POST_FRAG);
+        if (!postShader.isCompiled()) {
+            throw new IllegalStateException(postShader.getLog());
+        }
         lampMesh = lampSphere();
         skyMesh = skyQuad();
     }
 
-    /** Clear the window. Call before the tiles or the large view. */
+    /** Clear the offscreen picture. Call before the tiles or the large view. */
     public void begin() {
+        ensureTargets();
+        hdr.begin();
         Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        Gdx.gl.glDisable(GL20.GL_BLEND);
         HdpiUtils.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClearColor(0.62f, 0.64f, 0.68f, 1f);
+        Gdx.gl.glClearColor(CLEAR_WINDOW[0], CLEAR_WINDOW[1], CLEAR_WINDOW[2], 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
         Gdx.gl.glEnable(GL20.GL_CULL_FACE);
@@ -73,7 +105,7 @@ public final class ForwardRenderer {
         Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
         HdpiUtils.glViewport(x, y, width, height);
         HdpiUtils.glScissor(x, y, width, height);
-        Gdx.gl.glClearColor(0.40f, 0.42f, 0.46f, 1f);
+        Gdx.gl.glClearColor(CLEAR_TILE[0], CLEAR_TILE[1], CLEAR_TILE[2], 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     }
 
@@ -129,20 +161,153 @@ public final class ForwardRenderer {
         shader.bind();
     }
 
-    /** Full window again, so text is not stuck in the last tile. */
-    public void end() {
+    /**
+     * Copy the picture to the window. The large view passes true so glowing
+     * voxels pick up a soft halo. Tiles pass false and stay sharp.
+     */
+    public void end(boolean halo) {
+        if (hdr != null) {
+            hdr.end();
+        }
         Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
-        HdpiUtils.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glDisable(GL20.GL_DEPTH_TEST);
         Gdx.gl.glDisable(GL20.GL_CULL_FACE);
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+        if (halo) {
+            runBloom();
+        }
+        present(halo ? BLOOM_MIX : 0f);
+        HdpiUtils.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     public void dispose() {
         shader.dispose();
         lampShader.dispose();
         skyShader.dispose();
+        downShader.dispose();
+        upShader.dispose();
+        postShader.dispose();
         lampMesh.dispose();
         skyMesh.dispose();
+        disposeTargets();
+    }
+
+    /** HDR picture plus five smaller copies used to blur the halo. */
+    private void ensureTargets() {
+        int w = Math.max(1, Gdx.graphics.getBackBufferWidth());
+        int h = Math.max(1, Gdx.graphics.getBackBufferHeight());
+        if (hdr != null && bufW == w && bufH == h) {
+            return;
+        }
+        disposeTargets();
+        bufW = w;
+        bufH = h;
+        hdr = floatTarget(w, h, true);
+        int bw = w;
+        int bh = h;
+        for (int i = 0; i < BLOOM_LEVELS; i++) {
+            bloom[i] = floatTarget(bw, bh, false);
+            bw = Math.max(1, bw / 2);
+            bh = Math.max(1, bh / 2);
+        }
+    }
+
+    private static FrameBuffer floatTarget(int width, int height, boolean depth) {
+        GLFrameBuffer.FrameBufferBuilder builder = new GLFrameBuffer.FrameBufferBuilder(width, height);
+        builder.addFloatAttachment(GL30.GL_RGBA16F, GL30.GL_RGBA, GL30.GL_FLOAT, false);
+        if (depth) {
+            builder.addBasicDepthRenderBuffer();
+        }
+        FrameBuffer buffer = builder.build();
+        Texture texture = buffer.getColorBufferTexture();
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        texture.setWrap(Texture.TextureWrap.ClampToEdge, Texture.TextureWrap.ClampToEdge);
+        return buffer;
+    }
+
+    private void disposeTargets() {
+        if (hdr != null) {
+            hdr.dispose();
+            hdr = null;
+        }
+        for (int i = 0; i < bloom.length; i++) {
+            if (bloom[i] != null) {
+                bloom[i].dispose();
+                bloom[i] = null;
+            }
+        }
+    }
+
+    /**
+     * Blur the bright picture down to a small size and back up, adding each
+     * coarser blur onto the sharper one. The full-size result is about four
+     * times too strong, which the tone pass divides back out.
+     */
+    private void runBloom() {
+        blit(hdr, bloom[1], downShader, false);
+        blit(bloom[1], bloom[2], downShader, false);
+        blit(bloom[2], bloom[3], downShader, false);
+        blit(bloom[3], bloom[4], downShader, false);
+        blit(bloom[4], bloom[3], upShader, true);
+        blit(bloom[3], bloom[2], upShader, true);
+        blit(bloom[2], bloom[1], upShader, true);
+        blit(bloom[1], bloom[0], upShader, false);
+    }
+
+    private void blit(FrameBuffer src, FrameBuffer dst, ShaderProgram program, boolean add) {
+        dst.begin();
+        Gdx.gl.glDisable(GL20.GL_DEPTH_TEST);
+        Gdx.gl.glDisable(GL20.GL_CULL_FACE);
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        if (add) {
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_ONE, GL20.GL_ONE);
+        } else {
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
+        program.bind();
+        src.getColorBufferTexture().bind(0);
+        program.setUniformi("u_src", 0);
+        program.setUniformf("u_halfpixel", 0.5f / src.getWidth(), 0.5f / src.getHeight());
+        skyMesh.render(program, GL20.GL_TRIANGLES);
+        dst.end();
+    }
+
+    /** Tone curve onto the window. mix is 0.2 for the halo and 0 for tiles. */
+    private void present(float mix) {
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+        Gdx.gl.glDisable(GL20.GL_DEPTH_TEST);
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        HdpiUtils.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        postShader.bind();
+        hdr.getColorBufferTexture().bind(0);
+        bloom[0].getColorBufferTexture().bind(1);
+        postShader.setUniformi("u_color", 0);
+        postShader.setUniformi("u_bloom", 1);
+        postShader.setUniformf("u_mix", mix);
+        skyMesh.render(postShader, GL20.GL_TRIANGLES);
+        // bind(1) leaves the card on the halo picture. Text then paints solid blocks.
+        Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+    }
+
+    /** Undo the tone curve so a display color survives the final pass. */
+    private static float[] displayToHdr(float r, float g, float b) {
+        return new float[] {displayToHdr(r), displayToHdr(g), displayToHdr(b)};
+    }
+
+    private static float displayToHdr(float display) {
+        float mapped = Math.min(srgbToLinear(display), 0.98f);
+        float preGamma = (float) Math.pow(mapped, 1.0 / 1.3);
+        return (float) (-0.5 * Math.log(Math.max(1.0 - preGamma, 1.0e-4)));
+    }
+
+    private static float srgbToLinear(float c) {
+        if (c <= 0.04045f) {
+            return c / 12.92f;
+        }
+        return (float) Math.pow((c + 0.055) / 1.055, 2.4);
     }
 
     /** A coarse sphere of radius 1, used only as the lamp. */
@@ -198,9 +363,10 @@ public final class ForwardRenderer {
         return mesh;
     }
 
-    // Sun, tone curve, and sRGB conversion ported from Veloren
+    // Sun, tone curve, sRGB conversion, and the halo blur are ported from Veloren
     // (https://gitlab.com/veloren/veloren), assets/voxygen/shaders/include/sky.glsl,
-    // include/srgb.glsl, and postprocess-frag.glsl, GPL-3.0-or-later.
+    // include/srgb.glsl, postprocess-frag.glsl, dual-downsample-filtered-frag.glsl,
+    // dual-downsample-frag.glsl, and dual-upsample-frag.glsl, GPL-3.0-or-later.
     // The sun stays fixed in the sky. The yellow ball is a separate nearby lamp.
     // Water, clouds, and shadows are left out.
     private static final String VERT = """
@@ -244,17 +410,6 @@ public final class ForwardRenderer {
             vec3 higher = pow((srgb + vec3(0.055)) / vec3(1.055), vec3(2.4));
             vec3 lower = srgb / vec3(12.92);
             return mix(higher, lower, cutoff);
-        }
-
-        vec3 linearToSrgb(vec3 col) {
-            vec3 s1 = vec3(sqrt(col.r), sqrt(col.g), sqrt(col.b));
-            vec3 s2 = vec3(sqrt(s1.r), sqrt(s1.g), sqrt(s1.b));
-            vec3 s3 = vec3(sqrt(s2.r), sqrt(s2.g), sqrt(s2.b));
-            return vec3(
-                mix(11.500726 * col.r, (0.585122381 * s1.r + 0.783140355 * s2.r - 0.368262736 * s3.r), clamp((col.r - 0.0060) * 10000.0, 0.0, 1.0)),
-                mix(11.500726 * col.g, (0.585122381 * s1.g + 0.783140355 * s2.g - 0.368262736 * s3.g), clamp((col.g - 0.0060) * 10000.0, 0.0, 1.0)),
-                mix(11.500726 * col.b, (0.585122381 * s1.b + 0.783140355 * s2.b - 0.368262736 * s3.b), clamp((col.b - 0.0060) * 10000.0, 0.0, 1.0))
-            );
         }
 
         vec3 blinn(vec3 n, vec3 viewDir, vec3 lightDir) {
@@ -314,9 +469,7 @@ public final class ForwardRenderer {
                 emitted += 20.0 * col;
             }
             vec3 hdr = col * emitted + col * reflected;
-            vec3 mapped = vec3(1.0) - exp(-hdr * 2.0);
-            mapped = pow(max(mapped, vec3(0.0)), vec3(1.3));
-            frag = vec4(linearToSrgb(mapped), 1.0);
+            frag = vec4(hdr, 1.0);
         }
         """;
 
@@ -332,8 +485,22 @@ public final class ForwardRenderer {
     private static final String LAMP_FRAG = """
         #version 330
         out vec4 frag;
+
+        vec3 srgbToLinear(vec3 srgb) {
+            bvec3 cutoff = lessThan(srgb, vec3(0.04045));
+            vec3 higher = pow((srgb + vec3(0.055)) / vec3(1.055), vec3(2.4));
+            vec3 lower = srgb / vec3(12.92);
+            return mix(higher, lower, cutoff);
+        }
+
+        vec3 displayToHdr(vec3 display) {
+            vec3 mapped = min(srgbToLinear(display), vec3(0.98));
+            vec3 preGamma = pow(mapped, vec3(1.0 / 1.3));
+            return -0.5 * log(max(vec3(1.0) - preGamma, vec3(0.0001)));
+        }
+
         void main() {
-            frag = vec4(1.0, 0.86, 0.25, 1.0);
+            frag = vec4(displayToHdr(vec3(1.0, 0.86, 0.25)), 1.0);
         }
         """;
 
@@ -354,6 +521,20 @@ public final class ForwardRenderer {
         uniform mat4 u_inv_projview;
         uniform vec3 u_sun_to;
         out vec4 frag;
+
+        vec3 srgbToLinear(vec3 srgb) {
+            bvec3 cutoff = lessThan(srgb, vec3(0.04045));
+            vec3 higher = pow((srgb + vec3(0.055)) / vec3(1.055), vec3(2.4));
+            vec3 lower = srgb / vec3(12.92);
+            return mix(higher, lower, cutoff);
+        }
+
+        vec3 displayToHdr(vec3 display) {
+            vec3 mapped = min(srgbToLinear(display), vec3(0.98));
+            vec3 preGamma = pow(mapped, vec3(1.0 / 1.3));
+            return -0.5 * log(max(vec3(1.0) - preGamma, vec3(0.0001)));
+        }
+
         void main() {
             vec4 world = u_inv_projview * vec4(v_clip, 1.0, 1.0);
             vec3 dir = normalize(world.xyz / world.w - u_cam_pos);
@@ -364,7 +545,96 @@ public final class ForwardRenderer {
             float disc = smoothstep(0.9978, 0.9993, facing);
             col = mix(col, vec3(1.0, 0.90, 0.45), glow * 0.75);
             col = mix(col, vec3(1.0, 0.92, 0.35), disc);
-            frag = vec4(col, 1.0);
+            frag = vec4(displayToHdr(col), 1.0);
+        }
+        """;
+
+    private static final String BLIT_VERT = """
+        #version 330
+        in vec2 a_clip;
+        out vec2 v_uv;
+        void main() {
+            v_uv = a_clip * 0.5 + 0.5;
+            gl_Position = vec4(a_clip, 0.0, 1.0);
+        }
+        """;
+
+    private static final String DOWN_FRAG = """
+        #version 330
+        in vec2 v_uv;
+        uniform sampler2D u_src;
+        uniform vec2 u_halfpixel;
+        out vec4 frag;
+
+        vec4 sampleSrc(vec2 uv) {
+            vec4 color = texture(u_src, uv);
+            color = mix(color, vec4(0.0), isnan(color));
+            color = mix(color, vec4(100.0), isinf(color));
+            return color;
+        }
+
+        void main() {
+            vec2 hp = u_halfpixel;
+            vec4 sum = sampleSrc(v_uv) * 4.0;
+            sum += sampleSrc(v_uv - hp);
+            sum += sampleSrc(v_uv + hp);
+            sum += sampleSrc(v_uv + vec2(hp.x, -hp.y));
+            sum += sampleSrc(v_uv - vec2(hp.x, -hp.y));
+            frag = sum / 8.0;
+        }
+        """;
+
+    private static final String UP_FRAG = """
+        #version 330
+        in vec2 v_uv;
+        uniform sampler2D u_src;
+        uniform vec2 u_halfpixel;
+        out vec4 frag;
+
+        vec4 sampleSrc(vec2 uv) {
+            return texture(u_src, uv);
+        }
+
+        void main() {
+            vec2 hp = u_halfpixel;
+            vec4 sum = sampleSrc(v_uv + vec2(-hp.x * 2.0, 0.0));
+            sum += sampleSrc(v_uv + vec2(-hp.x, hp.y)) * 2.0;
+            sum += sampleSrc(v_uv + vec2(0.0, hp.y * 2.0));
+            sum += sampleSrc(v_uv + vec2(hp.x, hp.y)) * 2.0;
+            sum += sampleSrc(v_uv + vec2(hp.x * 2.0, 0.0));
+            sum += sampleSrc(v_uv + vec2(hp.x, -hp.y)) * 2.0;
+            sum += sampleSrc(v_uv + vec2(0.0, -hp.y * 2.0));
+            sum += sampleSrc(v_uv + vec2(-hp.x, -hp.y)) * 2.0;
+            frag = sum / 12.0;
+        }
+        """;
+
+    private static final String POST_FRAG = """
+        #version 330
+        in vec2 v_uv;
+        uniform sampler2D u_color;
+        uniform sampler2D u_bloom;
+        uniform float u_mix;
+        out vec4 frag;
+
+        vec3 linearToSrgb(vec3 col) {
+            vec3 s1 = vec3(sqrt(col.r), sqrt(col.g), sqrt(col.b));
+            vec3 s2 = vec3(sqrt(s1.r), sqrt(s1.g), sqrt(s1.b));
+            vec3 s3 = vec3(sqrt(s2.r), sqrt(s2.g), sqrt(s2.b));
+            return vec3(
+                mix(11.500726 * col.r, (0.585122381 * s1.r + 0.783140355 * s2.r - 0.368262736 * s3.r), clamp((col.r - 0.0060) * 10000.0, 0.0, 1.0)),
+                mix(11.500726 * col.g, (0.585122381 * s1.g + 0.783140355 * s2.g - 0.368262736 * s3.g), clamp((col.g - 0.0060) * 10000.0, 0.0, 1.0)),
+                mix(11.500726 * col.b, (0.585122381 * s1.b + 0.783140355 * s2.b - 0.368262736 * s3.b), clamp((col.b - 0.0060) * 10000.0, 0.0, 1.0))
+            );
+        }
+
+        void main() {
+            vec3 color = texture(u_color, v_uv).rgb;
+            vec3 bloom = texture(u_bloom, v_uv).rgb / 4.0;
+            vec3 hdr = mix(color, bloom, u_mix);
+            vec3 mapped = vec3(1.0) - exp(-hdr * 2.0);
+            mapped = pow(max(mapped, vec3(0.0)), vec3(1.3));
+            frag = vec4(linearToSrgb(mapped), 1.0);
         }
         """;
 }

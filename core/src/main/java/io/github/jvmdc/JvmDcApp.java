@@ -29,6 +29,8 @@ public class JvmDcApp extends ApplicationAdapter {
     private static final int LABEL_H = 28;
     private static final int GAP = 12;
     private static final int HEADER = 28;
+    private static final int CLEAR_W = 64;
+    private static final String HINT = "Scroll to browse. Click a model.";
     private static final int BTN_W = 96;
     private static final int BTN_H = 20;
     private static final long LOAD_BUDGET_NS = 8_000_000L;
@@ -56,6 +58,8 @@ public class JvmDcApp extends ApplicationAdapter {
     private VoxCatalog catalog;
     private final List<VoxCatalog.Entry> shown = new ArrayList<>();
     private boolean npcsOnly;
+    private final StringBuilder query = new StringBuilder();
+    private boolean searchFocus;
     private Texture pixel;
     private Mode mode = Mode.BROWSER;
     private VoxCatalog.Entry selected;
@@ -142,17 +146,27 @@ public class JvmDcApp extends ApplicationAdapter {
                 }
             }
             if (button == Input.Buttons.LEFT && mode == Mode.BROWSER && dx * dx + dy * dy < 36) {
-                int filter = filterAt(screenX, screenY);
-                if (filter >= 0) {
-                    boolean next = filter == 1;
-                    if (next != npcsOnly) {
-                        npcsOnly = next;
-                        applyFilter();
-                    }
+                int search = searchAt(screenX, screenY);
+                if (search == 2) {
+                    query.setLength(0);
+                    searchFocus = true;
+                    applyFilter();
+                } else if (search == 1) {
+                    searchFocus = true;
                 } else {
-                    int index = tileAt(screenX, screenY);
-                    if (index >= 0) {
-                        open(shown.get(index));
+                    searchFocus = false;
+                    int filter = filterAt(screenX, screenY);
+                    if (filter >= 0) {
+                        boolean next = filter == 1;
+                        if (next != npcsOnly) {
+                            npcsOnly = next;
+                            applyFilter();
+                        }
+                    } else {
+                        int index = tileAt(screenX, screenY);
+                        if (index >= 0) {
+                            open(shown.get(index));
+                        }
                     }
                 }
             }
@@ -175,7 +189,26 @@ public class JvmDcApp extends ApplicationAdapter {
                 mode = Mode.BROWSER;
                 return true;
             }
+            if (keycode == Input.Keys.ESCAPE && searchFocus) {
+                searchFocus = false;
+                return true;
+            }
+            if (keycode == Input.Keys.BACKSPACE && mode == Mode.BROWSER && searchFocus && query.length() > 0) {
+                query.setLength(query.length() - 1);
+                applyFilter();
+                return true;
+            }
             return false;
+        }
+
+        @Override
+        public boolean keyTyped(char character) {
+            if (mode != Mode.BROWSER || !searchFocus || character < 32 || character == 127) {
+                return false;
+            }
+            query.append(character);
+            applyFilter();
+            return true;
         }
     };
 
@@ -300,14 +333,16 @@ public class JvmDcApp extends ApplicationAdapter {
                 }
             }
         }
-        renderer.end();
+        renderer.end(false);
         beginText(width, height);
         font.setColor(0.1f, 0.1f, 0.12f, 1f);
         if (catalog.error != null) {
             font.draw(batch, catalog.error, 16, height - 16);
         } else {
-            font.draw(batch, "Scroll to browse. Click a model.", 12, height - 8);
-            drawFilter(width, height);
+            layoutHeader(width);
+            font.draw(batch, HINT, 12, height - 8);
+            drawFilter(height);
+            drawSearch(height);
             for (int i = 0; i < count; i++) {
                 int col = i % cols;
                 int row = i / cols;
@@ -353,7 +388,7 @@ public class JvmDcApp extends ApplicationAdapter {
                 renderer.drawLamp(camera, selected.mesh.span);
             }
         }
-        renderer.end();
+        renderer.end(true);
         beginText(width, height);
         font.setColor(0.08f, 0.08f, 0.1f, 1f);
         font.draw(batch, layout, 12, height - 8);
@@ -504,14 +539,28 @@ public class JvmDcApp extends ApplicationAdapter {
         return -1;
     }
 
+    private int fieldX;
+    private int fieldW;
+    private int clearX;
+    private int allX;
+    private int npcX;
+
+    /** Places the hint, search field, Clear, and the two filter chips on one row. */
+    private void layoutHeader(int width) {
+        layout.setText(font, HINT);
+        fieldX = 12 + (int) Math.ceil(layout.width) + 10;
+        npcX = width - 12 - BTN_W;
+        allX = npcX - 6 - BTN_W;
+        clearX = allX - 6 - CLEAR_W;
+        fieldW = Math.max(24, clearX - 8 - fieldX);
+    }
+
     /** 0 is All parts, 1 is NPCs, -1 is neither. */
     private int filterAt(int x, int y) {
         if (y < 4 || y >= 4 + BTN_H) {
             return -1;
         }
-        int width = Gdx.graphics.getWidth();
-        int npcX = width - 12 - BTN_W;
-        int allX = npcX - 6 - BTN_W;
+        layoutHeader(Gdx.graphics.getWidth());
         if (x >= allX && x < allX + BTN_W) {
             return 0;
         }
@@ -524,28 +573,72 @@ public class JvmDcApp extends ApplicationAdapter {
     private void applyFilter() {
         shown.clear();
         for (VoxCatalog.Entry entry : catalog.entries) {
-            if (!npcsOnly || entry.npc) {
-                shown.add(entry);
+            if (npcsOnly && !entry.npc) {
+                continue;
             }
+            if (query.length() > 0) {
+                String q = query.toString().toLowerCase();
+                if (!entry.name.toLowerCase().contains(q) && !entry.path.toLowerCase().contains(q)) {
+                    continue;
+                }
+            }
+            shown.add(entry);
         }
         scroll = 0f;
     }
 
-    private void drawFilter(int width, int height) {
-        int npcX = width - 12 - BTN_W;
-        int allX = npcX - 6 - BTN_W;
+    private void drawFilter(int height) {
         int bottom = height - 4 - BTN_H;
         chip(allX, bottom, "All parts", !npcsOnly);
         chip(npcX, bottom, "NPCs", npcsOnly);
     }
 
+    /** 1 is the text field, 2 is Clear, -1 is neither. Input y is from the top of the window. */
+    private int searchAt(int x, int y) {
+        if (y < 4 || y >= 4 + BTN_H) {
+            return -1;
+        }
+        layoutHeader(Gdx.graphics.getWidth());
+        if (x >= clearX && x < clearX + CLEAR_W) {
+            return 2;
+        }
+        if (x >= fieldX && x < fieldX + fieldW) {
+            return 1;
+        }
+        return -1;
+    }
+
+    private void drawSearch(int height) {
+        int bottom = height - 4 - BTN_H;
+        batch.setColor(searchFocus ? 0.95f : 0.82f, searchFocus ? 0.96f : 0.84f, searchFocus ? 0.97f : 0.86f, 1f);
+        batch.draw(pixel, fieldX, bottom, fieldW, BTN_H);
+        batch.setColor(Color.WHITE);
+        chip(clearX, bottom, CLEAR_W, BTN_H, "Clear", false);
+        String shownText = query.length() == 0 ? "Search" : query.toString();
+        font.setColor(query.length() == 0 ? 0.45f : 0.1f, query.length() == 0 ? 0.48f : 0.1f, query.length() == 0 ? 0.5f : 0.12f, 1f);
+        String fitted = fit(shownText, Math.max(12, fieldW - 12));
+        layout.setText(font, fitted);
+        font.draw(batch, fitted, fieldX + 6, bottom + BTN_H - 4);
+        if (searchFocus) {
+            float caretX = query.length() == 0 ? fieldX + 6 : fieldX + 8 + layout.width;
+            batch.setColor(0.15f, 0.16f, 0.18f, 1f);
+            batch.draw(pixel, caretX, bottom + 3, 1, BTN_H - 6);
+            batch.setColor(Color.WHITE);
+        }
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
+    }
+
     private void chip(int x, int bottom, String label, boolean on) {
+        chip(x, bottom, BTN_W, BTN_H, label, on);
+    }
+
+    private void chip(int x, int bottom, int width, int height, String label, boolean on) {
         batch.setColor(on ? 0.22f : 0.45f, on ? 0.28f : 0.48f, on ? 0.36f : 0.52f, 1f);
-        batch.draw(pixel, x, bottom, BTN_W, BTN_H);
+        batch.draw(pixel, x, bottom, width, height);
         batch.setColor(Color.WHITE);
         font.setColor(on ? 0.95f : 0.15f, on ? 0.96f : 0.16f, on ? 0.97f : 0.18f, 1f);
         layout.setText(font, label);
-        font.draw(batch, label, x + (BTN_W - layout.width) * 0.5f, bottom + BTN_H - 3);
+        font.draw(batch, label, x + (width - layout.width) * 0.5f, bottom + height - 3);
         font.setColor(0.1f, 0.1f, 0.12f, 1f);
     }
 

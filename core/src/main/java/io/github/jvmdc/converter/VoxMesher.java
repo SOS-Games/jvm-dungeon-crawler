@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Turns a voxel scene into triangle meshes. Hidden faces are dropped. A model
  * that does not fit in 16-bit indices is split into several meshes. Palette
- * slots 13 to 15 are marked glowing in the color alpha. Slot 16 is a hole.
+ * slots 14 to 16 are marked glowing in the color alpha. Slot 17 is a hole.
  * Each face corner carries how open the neighboring cells are, so creases shade darker.
  */
 public class VoxMesher {
@@ -311,16 +311,16 @@ public class VoxMesher {
             maxZ = Math.max(maxZ, p[2]);
         }
 
-        /** Empty air and palette slot 16 (a hollow cell) do not hide a face. */
+        /** Empty air and palette slot 17 (a hollow cell) do not hide a face. */
         private static boolean occupied(byte index) {
             int slot = index & 0xFF;
-            return slot != 0 && slot != 16;
+            return slot != 0 && slot != 17;
         }
 
-        /** Palette slots 13, 14, and 15 are the glowing voxels. */
+        /** Palette slots 14, 15, and 16 are the glowing voxels. */
         private static boolean glows(byte index) {
             int slot = index & 0xFF;
-            return slot >= 13 && slot <= 15;
+            return slot >= 14 && slot <= 16;
         }
 
         private void put(float[] p, float nx, float ny, float nz, float color, float ao) {
