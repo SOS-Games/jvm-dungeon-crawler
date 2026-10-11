@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -52,34 +53,97 @@ public final class VoxCatalog {
     public String error;
 
     public static VoxCatalog scan() {
-        VoxCatalog catalog = new VoxCatalog();
-        Properties properties = Converter.getLocalPropeties();
-        String velorenPath = properties.getProperty("velorenPath");
-        if (velorenPath == null || velorenPath.isBlank()) {
-            catalog.error = "velorenPath is missing from local.properties";
+        Scan scan = new Scan();
+        while (!scan.pump(-1)) {
+            // Runs the whole scan on this thread. The viewer pumps it across frames instead.
+        }
+        return scan.catalog();
+    }
+
+    /**
+     * Asset scan that can stop and resume. Mesh uploads stay on the calling thread.
+     * pump returns true when the catalog is finished.
+     */
+    public static final class Scan {
+        private enum Phase { LIST, FIGURES, BUILD, DONE }
+
+        private final VoxCatalog catalog = new VoxCatalog();
+        private Phase phase = Phase.LIST;
+        private Path root;
+        private Stream<Path> walk;
+        private Iterator<Path> files;
+        private List<NpcFigure.Assembly> figures = List.of();
+        private int figureIndex;
+        private Set<String> builtParts = new HashSet<>();
+        private int armed;
+
+        public VoxCatalog catalog() {
             return catalog;
         }
-        Path root = Path.of(velorenPath, "assets");
-        if (!Files.isDirectory(root)) {
-            catalog.error = "assets folder not found: " + root;
-            return catalog;
+
+        /** Does a slice of work. A negative budget runs until the scan is finished. */
+        public boolean pump(long budgetNs) {
+            long start = System.nanoTime();
+            try {
+                while (phase != Phase.DONE && (budgetNs < 0 || System.nanoTime() - start < budgetNs)) {
+                    step();
+                }
+            } catch (IOException e) {
+                catalog.error = phase == Phase.FIGURES
+                        ? "could not read npc json: " + e.getMessage()
+                        : "could not list assets: " + e.getMessage();
+                closeWalk();
+                phase = Phase.DONE;
+            }
+            return phase == Phase.DONE;
         }
-        List<Path> files = new ArrayList<>();
-        try (Stream<Path> walk = Files.walk(root)) {
-            walk.filter(path -> path.getFileName().toString().toLowerCase().endsWith(".vox"))
-                    .forEach(files::add);
-        } catch (IOException e) {
-            catalog.error = "could not list assets: " + e.getMessage();
-            return catalog;
+
+        /** Drops a scan that was stopped early, including any meshes already built. */
+        public void dispose() {
+            closeWalk();
+            catalog.dispose();
+            phase = Phase.DONE;
         }
-        List<NpcFigure.Assembly> figures;
-        try {
-            figures = NpcFigure.find(root);
-        } catch (IOException e) {
-            catalog.error = "could not read npc json: " + e.getMessage();
-            return catalog;
+
+        private void step() throws IOException {
+            switch (phase) {
+                case LIST -> listOne();
+                case FIGURES -> {
+                    figures = NpcFigure.find(root);
+                    phase = Phase.BUILD;
+                }
+                case BUILD -> buildOne();
+                case DONE -> {
+                }
+            }
         }
-        for (Path file : files) {
+
+        private void listOne() throws IOException {
+            if (root == null) {
+                Properties properties = Converter.getLocalPropeties();
+                String velorenPath = properties.getProperty("velorenPath");
+                if (velorenPath == null || velorenPath.isBlank()) {
+                    catalog.error = "velorenPath is missing from local.properties";
+                    phase = Phase.DONE;
+                    return;
+                }
+                root = Path.of(velorenPath, "assets");
+                if (!Files.isDirectory(root)) {
+                    catalog.error = "assets folder not found: " + root;
+                    phase = Phase.DONE;
+                    return;
+                }
+                walk = Files.walk(root);
+                files = walk.filter(path -> path.getFileName().toString().toLowerCase().endsWith(".vox"))
+                        .iterator();
+                return;
+            }
+            if (!files.hasNext()) {
+                closeWalk();
+                phase = Phase.FIGURES;
+                return;
+            }
+            Path file = files.next();
             String path = relative(root, file);
             String filename = file.getFileName().toString();
             String name = filename.toLowerCase().endsWith(".vox")
@@ -87,18 +151,26 @@ public final class VoxCatalog {
                     : filename;
             catalog.entries.add(new Entry(name, path, file.toFile()));
         }
-        Set<String> builtParts = new HashSet<>();
-        int armed = 0;
-        for (NpcFigure.Assembly figure : figures) {
+
+        private void buildOne() {
+            if (figureIndex >= figures.size()) {
+                catalog.entries.removeIf(entry -> !entry.npc && builtParts.contains(entry.path));
+                catalog.entries.sort(Comparator.comparing(entry -> entry.path));
+                Gdx.app.log("JvmDc", catalog.entries.size() + " tiles, " + figures.size()
+                        + " assembled npcs, " + armed + " weapons");
+                phase = Phase.DONE;
+                return;
+            }
+            NpcFigure.Assembly figure = figures.get(figureIndex++);
             Entry entry = new Entry(figure.name, figure.path, null, figure);
             try {
                 entry.mesh = NpcFigure.build(figure);
                 entry.rig = loadRig(figure);
                 for (NpcFigure.Part part : figure.parts) {
-                if (part.tool != null) {
-                    armed++;
-                    continue;
-                }
+                    if (part.tool != null) {
+                        armed++;
+                        continue;
+                    }
                     builtParts.add(relative(root, part.file));
                 }
             } catch (RuntimeException | IOException e) {
@@ -108,11 +180,14 @@ public final class VoxCatalog {
             }
             catalog.entries.add(entry);
         }
-        catalog.entries.removeIf(entry -> !entry.npc && builtParts.contains(entry.path));
-        catalog.entries.sort(Comparator.comparing(entry -> entry.path));
-        Gdx.app.log("JvmDc", catalog.entries.size() + " tiles, " + figures.size()
-                + " assembled npcs, " + armed + " weapons");
-        return catalog;
+
+        private void closeWalk() {
+            if (walk != null) {
+                walk.close();
+                walk = null;
+                files = null;
+            }
+        }
     }
 
     public void load(Entry entry) {

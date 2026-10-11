@@ -16,6 +16,11 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Align;
+import io.github.jvmdc.dungeongen.LayoutConfig;
+import io.github.jvmdc.dungeongen.Layouts;
+import io.github.jvmdc.dungeongen.common.Dungeon;
+import io.github.jvmdc.dungeongen.common.Tile;
+import io.github.jvmdc.dungeongen.common.TileGrid;
 import io.github.jvmdc.render.ForwardRenderer;
 import io.github.jvmdc.viewer.VoxCatalog;
 
@@ -30,13 +35,15 @@ public class JvmDcApp extends ApplicationAdapter {
     private static final int GAP = 12;
     private static final int HEADER = 28;
     private static final int CLEAR_W = 64;
-    private static final String HINT = "Scroll to browse. Click a model.";
+    private static final String HINT = "Scroll to browse. Click a model. Esc for the menu.";
+    private static final int MENU_W = 280;
+    private static final int MENU_H = 44;
     private static final int BTN_W = 96;
     private static final int CLIP_W = 112;
     private static final int BTN_H = 20;
     private static final long LOAD_BUDGET_NS = 8_000_000L;
 
-    private enum Mode { BROWSER, VIEW }
+    private enum Mode { MENU, LOADING, BROWSER, VIEW, DUNGEON }
 
     /** How a drag in the large view is used. */
     private enum Drag { SPIN, SLIDE, ORBIT }
@@ -49,12 +56,16 @@ public class JvmDcApp extends ApplicationAdapter {
     private PerspectiveCamera camera;
     private final Matrix4 model = new Matrix4();
     private VoxCatalog catalog;
+    private VoxCatalog.Scan catalogScan;
+    private float spin;
     private final List<VoxCatalog.Entry> shown = new ArrayList<>();
     private boolean npcsOnly;
     private final StringBuilder query = new StringBuilder();
     private boolean searchFocus;
     private Texture pixel;
-    private Mode mode = Mode.BROWSER;
+    private Mode mode = Mode.MENU;
+    private Dungeon dungeon;
+    private long dungeonSeed = 1L;
     private VoxCatalog.Entry selected;
     private float scroll;
     private float yaw;
@@ -125,6 +136,11 @@ public class JvmDcApp extends ApplicationAdapter {
                 this.button = -1;
                 return true;
             }
+            if (button == Input.Buttons.RIGHT && mode == Mode.DUNGEON) {
+                mode = Mode.MENU;
+                this.button = -1;
+                return true;
+            }
             int dx = screenX - pressX;
             int dy = screenY - pressY;
             if (button == Input.Buttons.LEFT && mode == Mode.VIEW && dx * dx + dy * dy < 36) {
@@ -141,6 +157,22 @@ public class JvmDcApp extends ApplicationAdapter {
                     drag = Drag.ORBIT;
                 } else if (picked == 3) {
                     showScene = !showScene;
+                }
+            }
+            if (button == Input.Buttons.LEFT && mode == Mode.MENU && dx * dx + dy * dy < 36) {
+                int picked = menuAt(screenX, screenY);
+                if (picked == 0) {
+                    openDungeon();
+                } else if (picked == 1) {
+                    openBrowser();
+                }
+            }
+            if (button == Input.Buttons.LEFT && mode == Mode.DUNGEON && dx * dx + dy * dy < 36) {
+                int picked = dungeonButtonAt(screenX, screenY);
+                if (picked == 0) {
+                    mode = Mode.MENU;
+                } else if (picked == 1) {
+                    nextDungeon();
                 }
             }
             if (button == Input.Buttons.LEFT && mode == Mode.BROWSER && dx * dx + dy * dy < 36) {
@@ -187,8 +219,20 @@ public class JvmDcApp extends ApplicationAdapter {
                 mode = Mode.BROWSER;
                 return true;
             }
-            if (keycode == Input.Keys.ESCAPE && searchFocus) {
-                searchFocus = false;
+            if (keycode == Input.Keys.ESCAPE && mode == Mode.LOADING) {
+                cancelLoad();
+                return true;
+            }
+            if (keycode == Input.Keys.ESCAPE && (mode == Mode.DUNGEON || mode == Mode.BROWSER)) {
+                if (mode == Mode.BROWSER && searchFocus) {
+                    searchFocus = false;
+                } else {
+                    mode = Mode.MENU;
+                }
+                return true;
+            }
+            if (keycode == Input.Keys.N && mode == Mode.DUNGEON) {
+                nextDungeon();
                 return true;
             }
             if (keycode == Input.Keys.BACKSPACE && mode == Mode.BROWSER && searchFocus && query.length() > 0) {
@@ -212,8 +256,6 @@ public class JvmDcApp extends ApplicationAdapter {
 
     @Override
     public void create() {
-        catalog = VoxCatalog.scan();
-        applyFilter();
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
@@ -230,9 +272,7 @@ public class JvmDcApp extends ApplicationAdapter {
         camera.far = 500f;
         camera.up.set(0f, 1f, 0f);
         Gdx.input.setInputProcessor(input);
-        if (catalog.error == null) {
-            Gdx.graphics.setTitle("JVM-Dungeon-Crawler — " + catalog.entries.size() + " models");
-        }
+        Gdx.graphics.setTitle("JVM-Dungeon-Crawler");
     }
 
     @Override
@@ -242,15 +282,27 @@ public class JvmDcApp extends ApplicationAdapter {
         cols = Math.max(1, (width - GAP) / (TILE_W + GAP));
         clampScroll(height);
         pumpLoads(height);
+        if (mode == Mode.LOADING) {
+            renderLoading(width, height);
+            return;
+        }
         if (mode == Mode.VIEW) {
             renderView(width, height);
-        } else {
+        } else if (mode == Mode.BROWSER) {
             renderBrowser(width, height);
+        } else if (mode == Mode.DUNGEON) {
+            renderDungeon(width, height);
+        } else {
+            renderMenu(width, height);
         }
     }
 
     @Override
     public void dispose() {
+        if (catalogScan != null) {
+            catalogScan.dispose();
+            catalogScan = null;
+        }
         if (catalog != null) {
             catalog.dispose();
         }
@@ -317,8 +369,36 @@ public class JvmDcApp extends ApplicationAdapter {
                 viewLook.z + dist * cp * MathUtils.cosDeg(yaw));
     }
 
+    private void openBrowser() {
+        searchFocus = false;
+        if (catalog != null) {
+            mode = Mode.BROWSER;
+            return;
+        }
+        catalogScan = null;
+        mode = Mode.LOADING;
+    }
+
+    private void cancelLoad() {
+        if (catalogScan != null) {
+            catalogScan.dispose();
+            catalogScan = null;
+        }
+        mode = Mode.MENU;
+    }
+
+    private void openDungeon() {
+        dungeon = Layouts.of(Layouts.DEFAULT).generate(LayoutConfig.attached(), dungeonSeed);
+        mode = Mode.DUNGEON;
+    }
+
+    private void nextDungeon() {
+        dungeonSeed++;
+        openDungeon();
+    }
+
     private void pumpLoads(int height) {
-        if (catalog.error != null) {
+        if (catalog == null || catalog.error != null) {
             return;
         }
         long deadline = System.nanoTime() + LOAD_BUDGET_NS;
@@ -462,6 +542,189 @@ public class JvmDcApp extends ApplicationAdapter {
         batch.end();
     }
 
+    private void renderLoading(int width, int height) {
+        // The first frame only draws. Work starts on the next frame, after this picture is up.
+        if (catalogScan == null) {
+            catalogScan = new VoxCatalog.Scan();
+        } else if (catalogScan.pump(LOAD_BUDGET_NS)) {
+            catalog = catalogScan.catalog();
+            catalogScan = null;
+            applyFilter();
+            if (catalog.error == null) {
+                Gdx.graphics.setTitle("JVM-Dungeon-Crawler — " + catalog.entries.size() + " models");
+            }
+            mode = Mode.BROWSER;
+            renderBrowser(width, height);
+            return;
+        }
+        renderer.begin();
+        renderer.end(false);
+        beginText(width, height);
+        spin = (spin + Gdx.graphics.getDeltaTime() * 280f) % 360f;
+        float cx = width * 0.5f;
+        float cy = height * 0.5f + 16f;
+        int marks = 12;
+        for (int i = 0; i < marks; i++) {
+            float age = i / (float) marks;
+            float angle = spin - i * (360f / marks);
+            batch.setColor(0.12f, 0.14f, 0.16f, 0.2f + 0.8f * (1f - age));
+            float x = cx + MathUtils.cosDeg(angle) * 26f;
+            float y = cy + MathUtils.sinDeg(angle) * 26f;
+            batch.draw(pixel, x - 3.5f, y - 3.5f, 7f, 7f);
+        }
+        batch.setColor(Color.WHITE);
+        font.setColor(0.15f, 0.16f, 0.18f, 1f);
+        String label = "Loading assets";
+        layout.setText(font, label);
+        font.draw(batch, label, cx - layout.width * 0.5f, cy - 52f);
+        font.setColor(0.35f, 0.37f, 0.4f, 1f);
+        String hint = "Esc for the menu";
+        layout.setText(font, hint);
+        font.draw(batch, hint, cx - layout.width * 0.5f, cy - 74f);
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
+        batch.end();
+    }
+
+    private void renderMenu(int width, int height) {
+        renderer.begin();
+        renderer.end(false);
+        beginText(width, height);
+        font.getData().setScale(2f);
+        font.setColor(0.12f, 0.13f, 0.16f, 1f);
+        String title = "JVM Dungeon Crawler";
+        layout.setText(font, title);
+        font.draw(batch, title, (width - layout.width) * 0.5f, height - 120);
+        font.getData().setScale(1f);
+        int x = menuX(width);
+        chip(x, height - menuTop(0) - MENU_H, MENU_W, MENU_H, "Dungeon generator", false);
+        chip(x, height - menuTop(1) - MENU_H, MENU_W, MENU_H, "Asset viewer", false);
+        batch.end();
+    }
+
+    private void renderDungeon(int width, int height) {
+        renderer.begin();
+        renderer.end(false);
+        beginText(width, height);
+        int header = 64;
+        if (dungeon != null) {
+            TileGrid grid = dungeon.grid;
+            int cell = Math.max(2, Math.min((width - 24) / grid.width, (height - header - 16) / grid.height));
+            int mapW = cell * grid.width;
+            int originX = (width - mapW) / 2;
+            int originTop = header + 8;
+            for (int y = 0; y < grid.height; y++) {
+                for (int x = 0; x < grid.width; x++) {
+                    paintCell(grid.get(x, y));
+                    int draw = Math.max(1, cell - 1);
+                    batch.draw(pixel, originX + x * cell, height - (originTop + (y + 1) * cell), draw, draw);
+                }
+            }
+            batch.setColor(Color.WHITE);
+            font.setColor(0.1f, 0.1f, 0.12f, 1f);
+            String status = "seed " + dungeon.seed
+                    + "    rooms " + dungeon.rooms.size()
+                    + "    N for another    Esc for the menu";
+            int textLeft = 12 + BTN_W + 10;
+            int textRight = width - 12 - BTN_W - 10;
+            font.draw(batch, fit(status, Math.max(12, textRight - textLeft)), textLeft, height - 8);
+            drawLegend(width, height);
+        }
+        int bottom = height - 4 - BTN_H;
+        chip(12, bottom, "Menu", false);
+        chip(width - 12 - BTN_W, bottom, "New", false);
+        batch.end();
+    }
+
+    private void paintCell(Tile tile) {
+        switch (tile) {
+            case ROOM_FLOOR -> batch.setColor(0.76f, 0.64f, 0.42f, 1f);
+            case CORRIDOR_FLOOR -> batch.setColor(0.45f, 0.55f, 0.48f, 1f);
+            case GROUND -> batch.setColor(0.40f, 0.38f, 0.32f, 1f);
+            case WALL -> batch.setColor(0.55f, 0.55f, 0.58f, 1f);
+            case ROCK -> batch.setColor(0.08f, 0.08f, 0.09f, 1f);
+            case DOOR -> batch.setColor(0.85f, 0.72f, 0.4f, 1f);
+            case LOCKED_DOOR -> batch.setColor(0.55f, 0.28f, 0.22f, 1f);
+            case SECRET_DOOR -> batch.setColor(0.72f, 0.48f, 0.9f, 1f);
+            case STAIRS_UP -> batch.setColor(0.25f, 0.85f, 0.55f, 1f);
+            case STAIRS_DOWN -> batch.setColor(0.95f, 0.42f, 0.12f, 1f);
+            case WATER -> batch.setColor(0.28f, 0.45f, 0.62f, 1f);
+            case DEEP_WATER -> batch.setColor(0.12f, 0.24f, 0.4f, 1f);
+            case LAVA -> batch.setColor(0.8f, 0.32f, 0.12f, 1f);
+            case PIT -> batch.setColor(0.05f, 0.05f, 0.06f, 1f);
+            case TRAP_PLATE -> batch.setColor(0.7f, 0.25f, 0.25f, 1f);
+        }
+    }
+
+    /** Colored swatches for every tile, under the seed line. */
+    private void drawLegend(int width, int height) {
+        Tile[] tiles = {
+                Tile.ROCK, Tile.WALL, Tile.GROUND, Tile.ROOM_FLOOR, Tile.CORRIDOR_FLOOR,
+                Tile.DOOR, Tile.LOCKED_DOOR, Tile.SECRET_DOOR, Tile.STAIRS_UP, Tile.STAIRS_DOWN,
+                Tile.WATER, Tile.DEEP_WATER, Tile.LAVA, Tile.PIT, Tile.TRAP_PLATE
+        };
+        String[] names = {
+                "rock", "wall", "ground", "room", "hall",
+                "door", "locked", "secret", "stairs up", "stairs down",
+                "water", "deep water", "lava", "pit", "trap"
+        };
+        int x = 12;
+        int y = height - 28;
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
+        for (int i = 0; i < tiles.length; i++) {
+            layout.setText(font, names[i]);
+            int item = 14 + (int) layout.width + 14;
+            if (x + item > width - 12) {
+                x = 12;
+                y -= 18;
+            }
+            paintCell(tiles[i]);
+            batch.draw(pixel, x, y - 10, 10, 10);
+            batch.setColor(Color.WHITE);
+            font.setColor(0.1f, 0.1f, 0.12f, 1f);
+            font.draw(batch, names[i], x + 14, y);
+            x += item;
+        }
+    }
+
+    private int menuX(int width) {
+        return (width - MENU_W) / 2;
+    }
+
+    /** Top of a menu button, measured from the top of the window. */
+    private int menuTop(int index) {
+        return 200 + index * (MENU_H + 16);
+    }
+
+    /** 0 is the dungeon, 1 is the asset viewer, -1 is neither. */
+    private int menuAt(int x, int y) {
+        int left = menuX(Gdx.graphics.getWidth());
+        if (x < left || x >= left + MENU_W) {
+            return -1;
+        }
+        for (int i = 0; i < 2; i++) {
+            int top = menuTop(i);
+            if (y >= top && y < top + MENU_H) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** 0 is Menu, 1 is New, -1 is neither. */
+    private int dungeonButtonAt(int x, int y) {
+        if (y < 4 || y >= 4 + BTN_H) {
+            return -1;
+        }
+        if (x >= 12 && x < 12 + BTN_W) {
+            return 0;
+        }
+        int newer = Gdx.graphics.getWidth() - 12 - BTN_W;
+        if (x >= newer && x < newer + BTN_W) {
+            return 1;
+        }
+        return -1;
+    }
+
     private void beginText(int width, int height) {
         uiCamera.setToOrtho(false, width, height);
         uiCamera.update();
@@ -489,7 +752,10 @@ public class JvmDcApp extends ApplicationAdapter {
     }
 
     private void clampScroll(int height) {
-        if (catalog.error != null || shown.isEmpty()) {
+        if (mode != Mode.BROWSER) {
+            return;
+        }
+        if (catalog == null || catalog.error != null || shown.isEmpty()) {
             scroll = 0f;
             return;
         }

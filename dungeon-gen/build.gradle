@@ -1,0 +1,17 @@
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('printMap', JavaExec) {
+    group = 'dungeon-gen'
+    description = 'Print an ASCII dungeon. Example: gradlew :dungeon-gen:printMap --args="--style accretion --seed 42"'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'io.github.jvmdc.dungeongen.DungeonGenMain'
+    workingDir = rootProject.projectDir
+}
