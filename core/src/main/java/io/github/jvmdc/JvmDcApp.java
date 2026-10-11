@@ -1,5 +1,6 @@
 package io.github.jvmdc;
 
+import com.badlogic.ashley.core.Engine;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -27,7 +28,11 @@ import io.github.jvmdc.dungeongen.common.Room;
 import io.github.jvmdc.dungeongen.common.Tile;
 import io.github.jvmdc.dungeongen.common.TileGrid;
 import io.github.jvmdc.assets.AssetRoots;
+import io.github.jvmdc.assets.ModelPaths;
 import io.github.jvmdc.converter.VoxMesher;
+import io.github.jvmdc.prop.PropCatalog;
+import io.github.jvmdc.prop.PropSpawner;
+import io.github.jvmdc.prop.PropView;
 import io.github.jvmdc.render.ForwardRenderer;
 import io.github.jvmdc.viewer.VoxCatalog;
 import io.github.jvmdc.world.BlockChunks;
@@ -90,6 +95,9 @@ public class JvmDcApp extends ApplicationAdapter {
     private final List<DrawnChunk> flyShell = new ArrayList<>();
     private final List<DrawnChunk> flyCeiling = new ArrayList<>();
     private String flyNote = "";
+    private PropCatalog propCatalog;
+    private Engine props;
+    private PropView propView;
     private VoxCatalog.Entry selected;
     private float scroll;
     private float yaw;
@@ -333,6 +341,9 @@ public class JvmDcApp extends ApplicationAdapter {
     public void render() {
         int width = Gdx.graphics.getWidth();
         int height = Gdx.graphics.getHeight();
+        if (renderer != null) {
+            renderer.resetClear();
+        }
         cols = Math.max(1, (width - GAP) / (TILE_W + GAP));
         clampScroll(height);
         pumpLoads(height);
@@ -375,6 +386,10 @@ public class JvmDcApp extends ApplicationAdapter {
             pixel.dispose();
         }
         disposeFly();
+        if (propView != null) {
+            propView.dispose();
+            propView = null;
+        }
     }
 
     private void open(VoxCatalog.Entry entry) {
@@ -475,6 +490,13 @@ public class JvmDcApp extends ApplicationAdapter {
                 BlockChunks.LevelMesh level = BlockChunks.buildParts(dungeon, palette);
                 uploadFly(level.shell, flyShell);
                 uploadFly(level.ceiling, flyCeiling);
+                if (propCatalog == null) {
+                    propCatalog = PropCatalog.load(AssetRoots.locate());
+                }
+                if (propView == null) {
+                    propView = new PropView(ModelPaths.locate());
+                }
+                props = PropSpawner.populate(dungeon, propCatalog);
                 placeFlySpawn();
                 flySeed = dungeon.seed;
                 cutaway = false;
@@ -528,6 +550,7 @@ public class JvmDcApp extends ApplicationAdapter {
         flyShell.clear();
         flyCeiling.clear();
         flySeed = Long.MIN_VALUE;
+        props = null;
     }
 
     private void renderFly(int width, int height) {
@@ -535,13 +558,23 @@ public class JvmDcApp extends ApplicationAdapter {
         if (!cutaway) {
             steerFly(dt);
         }
+        renderer.setClear(0.012f, 0.014f, 0.018f);
         renderer.begin();
+        renderer.setSunScale(0.05f);
+        Camera view;
         if (cutaway) {
             frameCutaway(width, height);
-            drawFlyChunks(topCamera, false);
+            view = topCamera;
         } else {
             frameFly(width, height);
-            drawFlyChunks(camera, true);
+            view = camera;
+        }
+        if (propView != null) {
+            propView.uploadLights(props, view, cutaway, renderer);
+        }
+        drawFlyChunks(view, !cutaway);
+        if (propView != null) {
+            propView.draw(props, renderer, view, model);
         }
         renderer.end(false);
         beginText(width, height);

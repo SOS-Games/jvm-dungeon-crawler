@@ -47,8 +47,17 @@ public final class ForwardRenderer {
     private int bufH;
     private final Matrix4 mvp = new Matrix4();
     private final Matrix4 lampXform = new Matrix4();
+    private static final int MAX_LIGHTS = 32;
     private final Vector3 lampPos = new Vector3();
     private float lampRadius;
+    private float sunScale = 1f;
+    private int lightCount;
+    private final float[] lightPos = new float[MAX_LIGHTS * 3];
+    private final float[] lightColor = new float[MAX_LIGHTS * 3];
+    private final float[] lightRadius = new float[MAX_LIGHTS];
+    private float clearR = CLEAR_WINDOW[0];
+    private float clearG = CLEAR_WINDOW[1];
+    private float clearB = CLEAR_WINDOW[2];
 
     public ForwardRenderer() {
         shader = new ShaderProgram(VERT, FRAG);
@@ -86,13 +95,41 @@ public final class ForwardRenderer {
         Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
         Gdx.gl.glDisable(GL20.GL_BLEND);
         HdpiUtils.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClearColor(CLEAR_WINDOW[0], CLEAR_WINDOW[1], CLEAR_WINDOW[2], 1f);
+        Gdx.gl.glClearColor(clearR, clearG, clearB, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
         Gdx.gl.glEnable(GL20.GL_CULL_FACE);
         Gdx.gl.glCullFace(GL20.GL_BACK);
         lampRadius = 0f;
+        sunScale = 1f;
+        lightCount = 0;
         shader.bind();
+    }
+
+    /** Background colour for the next {@link #begin}. */
+    public void setClear(float r, float g, float b) {
+        clearR = r;
+        clearG = g;
+        clearB = b;
+    }
+
+    public void resetClear() {
+        clearR = CLEAR_WINDOW[0];
+        clearG = CLEAR_WINDOW[1];
+        clearB = CLEAR_WINDOW[2];
+    }
+
+    /** 1 keeps the outdoor sun. A small value leaves the floor dark apart from point lights. */
+    public void setSunScale(float scale) {
+        sunScale = scale;
+    }
+
+    /** Replaces the point lights. At most 32 are used. */
+    public void setLights(float[] positions, float[] colors, float[] radii, int count) {
+        lightCount = Math.min(count, MAX_LIGHTS);
+        System.arraycopy(positions, 0, lightPos, 0, lightCount * 3);
+        System.arraycopy(colors, 0, lightColor, 0, lightCount * 3);
+        System.arraycopy(radii, 0, lightRadius, 0, lightCount);
     }
 
     /**
@@ -119,8 +156,11 @@ public final class ForwardRenderer {
         shader.setUniformMatrix("u_model", model);
         shader.setUniformf("u_cam_pos", camera.position.x, camera.position.y, camera.position.z);
         shader.setUniformf("u_sun_to", SUN_TO.x, SUN_TO.y, SUN_TO.z);
-        shader.setUniformf("u_lamp_pos", lampPos.x, lampPos.y, lampPos.z);
-        shader.setUniformf("u_lamp_radius", lampRadius);
+        shader.setUniformf("u_sun_scale", sunScale);
+        shader.setUniformi("u_light_count", lightCount);
+        shader.setUniform3fv("u_light_pos", lightPos, 0, MAX_LIGHTS * 3);
+        shader.setUniform3fv("u_light_color", lightColor, 0, MAX_LIGHTS * 3);
+        shader.setUniform1fv("u_light_radius", lightRadius, 0, MAX_LIGHTS);
         for (Mesh part : parts) {
             part.render(shader, GL20.GL_TRIANGLES);
         }
@@ -146,6 +186,14 @@ public final class ForwardRenderer {
         float size = Math.max(span, 1f);
         lampPos.set(0f, size * 0.62f, 0f);
         lampRadius = size * 0.9f;
+        lightCount = 1;
+        lightPos[0] = lampPos.x;
+        lightPos[1] = lampPos.y;
+        lightPos[2] = lampPos.z;
+        lightColor[0] = 7f;
+        lightColor[1] = 4.6f;
+        lightColor[2] = 1.3f;
+        lightRadius[0] = lampRadius;
     }
 
     /** The lamp mesh. Call {@link #placeLamp} first so the ball sits on the light. */
@@ -402,8 +450,12 @@ public final class ForwardRenderer {
         in float v_ao;
         uniform vec3 u_cam_pos;
         uniform vec3 u_sun_to;
-        uniform vec3 u_lamp_pos;
-        uniform float u_lamp_radius;
+        uniform float u_sun_scale;
+        const int MAX_LIGHTS = 32;
+        uniform int u_light_count;
+        uniform vec3 u_light_pos[MAX_LIGHTS];
+        uniform vec3 u_light_color[MAX_LIGHTS];
+        uniform float u_light_radius[MAX_LIGHTS];
         out vec4 frag;
 
         vec3 srgbToLinear(vec3 srgb) {
@@ -446,18 +498,21 @@ public final class ForwardRenderer {
             float top = pow(dot(n, vec3(0.0, 0.0, 1.0)) + 1.0, 2.0) * 0.25;
             vec3 fromSky = vec3(skyFace + ground);
             vec3 fromSun = vec3(sky + ground);
-            vec3 emitted = fromSky * (sunChroma * scatter) * top;
-            vec3 reflected = fromSun * ((vec3(1.0) - scatter) * sunChroma * blinn(n, viewDir, sunDir));
+            vec3 emitted = fromSky * (sunChroma * scatter) * top * u_sun_scale;
+            vec3 reflected = fromSun * ((vec3(1.0) - scatter) * sunChroma * blinn(n, viewDir, sunDir)) * u_sun_scale;
+            reflected += vec3(0.03) * (1.0 - u_sun_scale);
 
-            // The yellow ball is a lamp. Bright up close, dim a body-length away.
-            if (u_lamp_radius > 0.0) {
-                vec3 toLamp = u_lamp_pos - v_wpos;
-                float dist2 = dot(toLamp, toLamp);
-                float reach = u_lamp_radius * u_lamp_radius;
+            for (int i = 0; i < MAX_LIGHTS; i++) {
+                if (i >= u_light_count || u_light_radius[i] <= 0.0) {
+                    continue;
+                }
+                vec3 toLight = u_light_pos[i] - v_wpos;
+                float dist2 = dot(toLight, toLight);
+                float reach = u_light_radius[i] * u_light_radius[i];
                 float atten = 1.0 / (1.0 + dist2 / reach);
-                vec3 lampDir = toLamp * inversesqrt(max(dist2, 0.0001));
-                float lampLit = max(dot(nY, lampDir), 0.0);
-                reflected += vec3(7.0, 4.6, 1.3) * atten * lampLit;
+                vec3 lightDir = toLight * inversesqrt(max(dist2, 0.0001));
+                float lit = max(dot(nY, lightDir), 0.0);
+                reflected += u_light_color[i] * atten * lit;
             }
 
             float ao = v_ao * sqrt(max(v_ao, 0.0));
