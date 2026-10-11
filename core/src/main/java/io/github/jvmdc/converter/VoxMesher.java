@@ -108,6 +108,17 @@ public class VoxMesher {
         return builder.finish(false);
     }
 
+    /**
+     * Greedy-meshes one chunk. {@code voxels} is x + sizeX * (y + sizeY * z),
+     * with a one-voxel pad on x and y so a face on the chunk edge is dropped
+     * when the next chunk is solid. 0 is empty. Any other byte is a slot in
+     * {@code rgbaBySlot} (red in the high byte). Vertices are Y-up, in voxels,
+     * and 0 is the chunk corner rather than the pad.
+     */
+    public static VolumeMesh meshVolume(byte[] voxels, int sizeX, int sizeY, int sizeZ, int[] rgbaBySlot) {
+        return GreedyMesh.build(voxels, sizeX, sizeY, sizeZ, rgbaBySlot);
+    }
+
     private static VoxReader.VoxModel flipX(VoxReader.VoxModel model) {
         VoxReader.VoxModel copy = new VoxReader.VoxModel();
         copy.sizeX = model.sizeX;

@@ -1,10 +1,10 @@
 package io.github.jvmdc.render;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes;
@@ -110,7 +110,7 @@ public final class ForwardRenderer {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     }
 
-    public void draw(PerspectiveCamera camera, Mesh[] parts, Matrix4 model) {
+    public void draw(Camera camera, Mesh[] parts, Matrix4 model) {
         if (parts == null || parts.length == 0) {
             return;
         }
@@ -130,7 +130,7 @@ public final class ForwardRenderer {
      * Veloren's day sky behind the model. Brighter overhead, darker toward
      * the ground, with the sun in it. This is only the backdrop.
      */
-    public void backdrop(PerspectiveCamera camera) {
+    public void backdrop(Camera camera) {
         skyShader.bind();
         skyShader.setUniformMatrix("u_inv_projview", camera.invProjectionView);
         skyShader.setUniformf("u_cam_pos", camera.position.x, camera.position.y, camera.position.z);
@@ -149,7 +149,7 @@ public final class ForwardRenderer {
     }
 
     /** The lamp mesh. Call {@link #placeLamp} first so the ball sits on the light. */
-    public void drawLamp(PerspectiveCamera camera, float span) {
+    public void drawLamp(Camera camera, float span) {
         float radius = Math.max(span, 1f) * 0.07f;
         lampXform.setToTranslation(lampPos);
         lampXform.scale(radius, radius, radius);

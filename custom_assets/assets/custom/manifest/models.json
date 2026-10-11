@@ -1,0 +1,835 @@
+{
+ "_units": "voxels; 11 voxels = 1 tile; z up; offsets/pivots/attach in model-local voxels",
+ "asset_root": "assets/custom",
+ "models": {
+  "trap.lever_base": {
+   "vox": "custom.voxel.trap.lever_base",
+   "size": [
+    7,
+    4,
+    9
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.lever_handle": {
+   "vox": "custom.voxel.trap.lever_handle",
+   "size": [
+    3,
+    1,
+    8
+   ],
+   "offset": [
+    -1,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "pivot": [
+    1.5,
+    0,
+    0
+   ]
+  },
+  "trap.lever_up": {
+   "vox": "custom.voxel.trap.lever_up",
+   "size": [
+    7,
+    9,
+    11
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.lever_down": {
+   "vox": "custom.voxel.trap.lever_down",
+   "size": [
+    7,
+    9,
+    11
+   ],
+   "offset": [
+    0,
+    0,
+    -2
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.button_base": {
+   "vox": "custom.voxel.trap.button_base",
+   "size": [
+    7,
+    2,
+    7
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.button_cap": {
+   "vox": "custom.voxel.trap.button_cap",
+   "size": [
+    3,
+    3,
+    3
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.button_normal": {
+   "vox": "custom.voxel.trap.button_normal",
+   "size": [
+    7,
+    4,
+    7
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.button_pressed": {
+   "vox": "custom.voxel.trap.button_pressed",
+   "size": [
+    7,
+    3,
+    7
+   ],
+   "offset": [
+    0,
+    -1,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.plate_frame": {
+   "vox": "custom.voxel.trap.plate_frame",
+   "size": [
+    11,
+    11,
+    2
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.plate_slab": {
+   "vox": "custom.voxel.trap.plate_slab",
+   "size": [
+    9,
+    9,
+    1
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.pressure_plate_up": {
+   "vox": "custom.voxel.trap.pressure_plate_up",
+   "size": [
+    11,
+    11,
+    2
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.pressure_plate_pressed": {
+   "vox": "custom.voxel.trap.pressure_plate_pressed",
+   "size": [
+    11,
+    11,
+    2
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.beartrap_closed": {
+   "vox": "custom.voxel.trap.beartrap_closed",
+   "size": [
+    9,
+    5,
+    4
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.arrow_slit_wall": {
+   "vox": "custom.voxel.trap.arrow_slit_wall",
+   "size": [
+    11,
+    2,
+    11
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "attach": {
+    "projectile_spawn": {
+     "pos": [
+      5.5,
+      2,
+      6
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ]
+    }
+   }
+  },
+  "trap.crystal_base": {
+   "vox": "custom.voxel.trap.crystal_base",
+   "size": [
+    9,
+    9,
+    4
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "trap.crystal_gem": {
+   "vox": "custom.voxel.trap.crystal_gem",
+   "size": [
+    7,
+    7,
+    10
+   ],
+   "offset": [
+    -3,
+    -3,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "pivot": [
+    3.5,
+    3.5,
+    0
+   ]
+  },
+  "trap.beam_emitter": {
+   "vox": "custom.voxel.trap.beam_emitter",
+   "size": [
+    5,
+    3,
+    5
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "attach": {
+    "beam_origin": {
+     "pos": [
+      2.5,
+      3,
+      2.5
+     ],
+     "dir": [
+      0,
+      1,
+      0
+     ]
+    }
+   }
+  },
+  "trap.power_crystal_assembled": {
+   "vox": "custom.voxel.trap.power_crystal_assembled",
+   "size": [
+    9,
+    9,
+    14
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "trap.pedestal_empty": {
+   "vox": "custom.voxel.trap.pedestal_empty",
+   "size": [
+    11,
+    11,
+    3
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "license": "GPL-3.0 derivative"
+  },
+  "trap.spike_base": {
+   "vox": "custom.voxel.trap.haniwa_spike_base",
+   "size": [
+    11,
+    11,
+    8
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "license": "GPL-3.0 derivative"
+  },
+  "trap.spike_shafts": {
+   "vox": "custom.voxel.trap.haniwa_spikes",
+   "size": [
+    9,
+    9,
+    14
+   ],
+   "offset": [
+    1,
+    1,
+    5
+   ],
+   "scale": 0.09090909090909091,
+   "license": "GPL-3.0 derivative"
+  },
+  "trap.boulder_round": {
+   "vox": "custom.voxel.trap.boulder_round",
+   "size": [
+    23,
+    23,
+    23
+   ],
+   "offset": [
+    -11.5,
+    -11.5,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "pivot": [
+    11.5,
+    11.5,
+    11.5
+   ],
+   "note": "about 2 tiles wide; roll about the centre"
+  },
+  "placement.stairs_down": {
+   "vox": "custom.voxel.placement.stairs_down",
+   "size": [
+    11,
+    11,
+    11
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.stairs_up": {
+   "vox": "custom.voxel.placement.stairs_up",
+   "size": [
+    11,
+    11,
+    16
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.hatch_frame": {
+   "vox": "custom.voxel.placement.hatch_frame",
+   "size": [
+    11,
+    11,
+    2
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.hatch_door": {
+   "vox": "custom.voxel.placement.hatch_door",
+   "size": [
+    7,
+    7,
+    2
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.hatch_ladder": {
+   "vox": "custom.voxel.placement.hatch_ladder",
+   "size": [
+    5,
+    1,
+    13
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.hatch_closed": {
+   "vox": "custom.voxel.placement.hatch_closed",
+   "size": [
+    11,
+    11,
+    14
+   ],
+   "offset": [
+    0,
+    0,
+    -11
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true
+  },
+  "placement.hatch_open": {
+   "vox": "custom.voxel.placement.hatch_open",
+   "size": [
+    11,
+    11,
+    20
+   ],
+   "offset": [
+    0,
+    0,
+    -11
+   ],
+   "scale": 0.09090909090909091,
+   "baked_preview": true,
+   "note": "approximate; straps on wrong face, prefer rig"
+  },
+  "placement.sink": {
+   "vox": "custom.voxel.placement.sink",
+   "size": [
+    9,
+    9,
+    16
+   ],
+   "offset": [
+    1,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.altar": {
+   "vox": "custom.voxel.placement.altar",
+   "size": [
+    11,
+    7,
+    10
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091
+  },
+  "placement.altar_flame": {
+   "vox": "custom.voxel.placement.altar_flame",
+   "size": [
+    1,
+    1,
+    2
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "pivot": [
+    0,
+    0,
+    0
+   ],
+   "emissive": true
+  },
+  "item.spellbook_plain": {
+   "vox": "custom.voxel.item.spellbook.spellbook_plain",
+   "size": [
+    10,
+    13,
+    4
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "note": "lies flat, spine along -x; drop offset z = size z"
+  },
+  "item.spellbook_studded": {
+   "vox": "custom.voxel.item.spellbook.spellbook_studded",
+   "size": [
+    10,
+    13,
+    5
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "note": "lies flat, spine along -x; drop offset z = size z"
+  },
+  "item.spellbook_clasp": {
+   "vox": "custom.voxel.item.spellbook.spellbook_clasp",
+   "size": [
+    11,
+    13,
+    5
+   ],
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "scale": 0.09090909090909091,
+   "note": "lies flat, spine along -x; drop offset z = size z"
+  }
+ },
+ "rigs": {
+  "trap.lever": {
+   "parts": [
+    {
+     "model": "trap.lever_base",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "trap.lever_handle",
+     "at": [
+      3.5,
+      3.5,
+      4.5
+     ],
+     "name": "handle",
+     "joint": {
+      "type": "rotate",
+      "axis": [
+       1,
+       0,
+       0
+      ],
+      "states": {
+       "up": 40,
+       "down": 140
+      }
+     }
+    }
+   ]
+  },
+  "trap.button": {
+   "parts": [
+    {
+     "model": "trap.button_base",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "trap.button_cap",
+     "at": [
+      2,
+      1,
+      2
+     ],
+     "name": "cap",
+     "joint": {
+      "type": "translate",
+      "states": {
+       "normal": [
+        0,
+        0,
+        0
+       ],
+       "pressed": [
+        0,
+        -2,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  "trap.pressure_plate": {
+   "parts": [
+    {
+     "model": "trap.plate_frame",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "trap.plate_slab",
+     "at": [
+      1,
+      1,
+      1
+     ],
+     "name": "slab",
+     "joint": {
+      "type": "translate",
+      "states": {
+       "up": [
+        0,
+        0,
+        0
+       ],
+       "pressed": [
+        0,
+        0,
+        -1
+       ]
+      }
+     }
+    }
+   ]
+  },
+  "trap.power_crystal": {
+   "parts": [
+    {
+     "model": "trap.crystal_base",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "trap.crystal_gem",
+     "at": [
+      4,
+      4,
+      4
+     ],
+     "name": "gem",
+     "joint": {
+      "type": "spin",
+      "axis": [
+       0,
+       0,
+       1
+      ],
+      "deg_per_sec": 45
+     }
+    }
+   ]
+  },
+  "trap.spikes": {
+   "parts": [
+    {
+     "model": "trap.spike_base",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "trap.spike_shafts",
+     "at": [
+      0,
+      0,
+      -6
+     ],
+     "name": "spikes",
+     "joint": {
+      "type": "translate",
+      "states": {
+       "retracted": [
+        0,
+        0,
+        0
+       ],
+       "extended": [
+        0,
+        0,
+        11
+       ]
+      }
+     }
+    }
+   ],
+   "note": "shaft file origin z=-6 retracted, z=5 extended"
+  },
+  "placement.floor_hatch": {
+   "parts": [
+    {
+     "model": "placement.hatch_frame",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "placement.hatch_door",
+     "at": [
+      2,
+      2,
+      1
+     ],
+     "name": "door",
+     "joint": {
+      "type": "rotate",
+      "axis": [
+       1,
+       0,
+       0
+      ],
+      "hinge": [
+       null,
+       2,
+       2
+      ],
+      "states": {
+       "closed": 0,
+       "open": -100
+      }
+     }
+    },
+    {
+     "model": "placement.hatch_ladder",
+     "at": [
+      3,
+      8,
+      -11
+     ],
+     "name": "ladder"
+    }
+   ]
+  },
+  "placement.altar": {
+   "parts": [
+    {
+     "model": "placement.altar",
+     "at": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "model": "placement.altar_flame",
+     "at": [
+      1,
+      1,
+      10
+     ],
+     "name": "flame_0",
+     "anim": "flicker"
+    },
+    {
+     "model": "placement.altar_flame",
+     "at": [
+      9,
+      1,
+      10
+     ],
+     "name": "flame_1",
+     "anim": "flicker"
+    },
+    {
+     "model": "placement.altar_flame",
+     "at": [
+      1,
+      5,
+      9
+     ],
+     "name": "flame_2",
+     "anim": "flicker"
+    },
+    {
+     "model": "placement.altar_flame",
+     "at": [
+      9,
+      5,
+      9
+     ],
+     "name": "flame_3",
+     "anim": "flicker"
+    }
+   ]
+  }
+ }
+}

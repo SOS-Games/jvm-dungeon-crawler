@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
@@ -25,8 +26,12 @@ import io.github.jvmdc.dungeongen.common.PlacementType;
 import io.github.jvmdc.dungeongen.common.Room;
 import io.github.jvmdc.dungeongen.common.Tile;
 import io.github.jvmdc.dungeongen.common.TileGrid;
+import io.github.jvmdc.assets.AssetRoots;
+import io.github.jvmdc.converter.VoxMesher;
 import io.github.jvmdc.render.ForwardRenderer;
 import io.github.jvmdc.viewer.VoxCatalog;
+import io.github.jvmdc.world.BlockChunks;
+import io.github.jvmdc.world.BlockPalette;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +52,7 @@ public class JvmDcApp extends ApplicationAdapter {
     private static final int BTN_H = 20;
     private static final long LOAD_BUDGET_NS = 8_000_000L;
 
-    private enum Mode { MENU, LOADING, BROWSER, VIEW, DUNGEON }
+    private enum Mode { MENU, LOADING, BROWSER, VIEW, DUNGEON, FLY }
 
     /** How a drag in the large view is used. */
     private enum Drag { SPIN, SLIDE, ORBIT }
@@ -74,6 +79,17 @@ public class JvmDcApp extends ApplicationAdapter {
     private boolean showPlacements = true;
     /** Last tile copied from a click, shown in the status line. */
     private String copiedTile = "";
+    /** Top-down view with ceiling slabs hidden. */
+    private boolean cutaway;
+    private float cutawayZoom = 1f;
+    private long flySeed = Long.MIN_VALUE;
+    private final Vector3 flyPos = new Vector3();
+    private float flyYaw;
+    private float flyPitch;
+    private OrthographicCamera topCamera;
+    private final List<DrawnChunk> flyShell = new ArrayList<>();
+    private final List<DrawnChunk> flyCeiling = new ArrayList<>();
+    private String flyNote = "";
     private VoxCatalog.Entry selected;
     private float scroll;
     private float yaw;
@@ -216,6 +232,10 @@ public class JvmDcApp extends ApplicationAdapter {
 
         @Override
         public boolean scrolled(float amountX, float amountY) {
+            if (mode == Mode.FLY && cutaway) {
+                cutawayZoom = MathUtils.clamp(cutawayZoom * (amountY > 0f ? 0.9f : 1.1f), 0.35f, 8f);
+                return true;
+            }
             if (mode != Mode.BROWSER) {
                 return false;
             }
@@ -233,6 +253,25 @@ public class JvmDcApp extends ApplicationAdapter {
                 cancelLoad();
                 return true;
             }
+            if (keycode == Input.Keys.ESCAPE && mode == Mode.FLY) {
+                Gdx.input.setCursorCatched(false);
+                mode = Mode.DUNGEON;
+                return true;
+            }
+            if (keycode == Input.Keys.C && mode == Mode.FLY) {
+                cutaway = !cutaway;
+                if (cutaway) {
+                    cutawayZoom = 1f;
+                }
+                Gdx.input.setCursorCatched(!cutaway);
+                Gdx.input.getDeltaX();
+                Gdx.input.getDeltaY();
+                return true;
+            }
+            if (keycode == Input.Keys.F && mode == Mode.DUNGEON) {
+                enterFly();
+                return true;
+            }
             if (keycode == Input.Keys.ESCAPE && (mode == Mode.DUNGEON || mode == Mode.BROWSER)) {
                 if (mode == Mode.BROWSER && searchFocus) {
                     searchFocus = false;
@@ -241,7 +280,7 @@ public class JvmDcApp extends ApplicationAdapter {
                 }
                 return true;
             }
-            if (keycode == Input.Keys.N && mode == Mode.DUNGEON) {
+            if (keycode == Input.Keys.N && (mode == Mode.DUNGEON || mode == Mode.FLY)) {
                 nextDungeon();
                 return true;
             }
@@ -285,6 +324,7 @@ public class JvmDcApp extends ApplicationAdapter {
         camera.near = 0.1f;
         camera.far = 500f;
         camera.up.set(0f, 1f, 0f);
+        topCamera = new OrthographicCamera();
         Gdx.input.setInputProcessor(input);
         Gdx.graphics.setTitle("JVM-Dungeon-Crawler");
     }
@@ -306,6 +346,8 @@ public class JvmDcApp extends ApplicationAdapter {
             renderBrowser(width, height);
         } else if (mode == Mode.DUNGEON) {
             renderDungeon(width, height);
+        } else if (mode == Mode.FLY) {
+            renderFly(width, height);
         } else {
             renderMenu(width, height);
         }
@@ -332,6 +374,7 @@ public class JvmDcApp extends ApplicationAdapter {
         if (pixel != null) {
             pixel.dispose();
         }
+        disposeFly();
     }
 
     private void open(VoxCatalog.Entry entry) {
@@ -402,14 +445,210 @@ public class JvmDcApp extends ApplicationAdapter {
     }
 
     private void openDungeon() {
+        boolean flying = mode == Mode.FLY;
+        disposeFly();
         dungeon = Layouts.of(Layouts.DEFAULT).generate(LayoutConfig.attached(), dungeonSeed);
         copiedTile = "";
-        mode = Mode.DUNGEON;
+        flyNote = "";
+        cutaway = false;
+        mode = flying ? Mode.FLY : Mode.DUNGEON;
+        if (flying) {
+            enterFly();
+        }
     }
 
     private void nextDungeon() {
         dungeonSeed++;
         openDungeon();
+    }
+
+    /** First-person fly through the meshed floor. C switches to a top-down cutaway. */
+    private void enterFly() {
+        if (dungeon == null) {
+            return;
+        }
+        if (flySeed != dungeon.seed || flyShell.isEmpty()) {
+            disposeFly();
+            try {
+                BlockPalette palette = BlockPalette.load(
+                        AssetRoots.locate().custom.resolve("manifest").resolve("block_palette.json"));
+                BlockChunks.LevelMesh level = BlockChunks.buildParts(dungeon, palette);
+                uploadFly(level.shell, flyShell);
+                uploadFly(level.ceiling, flyCeiling);
+                placeFlySpawn();
+                flySeed = dungeon.seed;
+                cutaway = false;
+                flyNote = "";
+            } catch (Exception e) {
+                disposeFly();
+                flyNote = "could not build the 3D floor";
+                mode = Mode.DUNGEON;
+                return;
+            }
+        }
+        mode = Mode.FLY;
+        Gdx.input.setCursorCatched(!cutaway);
+        Gdx.input.getDeltaX();
+        Gdx.input.getDeltaY();
+    }
+
+    private void uploadFly(List<BlockChunks.ChunkMesh> chunks, List<DrawnChunk> into) {
+        for (BlockChunks.ChunkMesh chunk : chunks) {
+            if (chunk.mesh.quads <= 0) {
+                continue;
+            }
+            into.add(new DrawnChunk(chunk.originX, chunk.originY, chunk.mesh.upload()));
+        }
+    }
+
+    private void placeFlySpawn() {
+        TileGrid grid = dungeon.grid;
+        int tileX = grid.width / 2;
+        int tileY = grid.height / 2;
+        if (dungeon.stairsUp >= 0) {
+            tileX = grid.x(dungeon.stairsUp);
+            tileY = grid.y(dungeon.stairsUp);
+        }
+        float center = BlockChunks.VOXELS_PER_TILE * 0.5f;
+        flyPos.set(
+                tileX * BlockChunks.VOXELS_PER_TILE + center,
+                BlockChunks.FLOOR + 20f,
+                -(tileY * BlockChunks.VOXELS_PER_TILE + center));
+        flyYaw = 0f;
+        flyPitch = 0f;
+    }
+
+    private void disposeFly() {
+        for (DrawnChunk chunk : flyShell) {
+            chunk.mesh.dispose();
+        }
+        for (DrawnChunk chunk : flyCeiling) {
+            chunk.mesh.dispose();
+        }
+        flyShell.clear();
+        flyCeiling.clear();
+        flySeed = Long.MIN_VALUE;
+    }
+
+    private void renderFly(int width, int height) {
+        float dt = Math.min(Gdx.graphics.getDeltaTime(), 0.05f);
+        if (!cutaway) {
+            steerFly(dt);
+        }
+        renderer.begin();
+        if (cutaway) {
+            frameCutaway(width, height);
+            drawFlyChunks(topCamera, false);
+        } else {
+            frameFly(width, height);
+            drawFlyChunks(camera, true);
+        }
+        renderer.end(false);
+        beginText(width, height);
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
+        String status = "seed " + dungeon.seed
+                + (cutaway ? "    top-down, ceilings hidden" : "    fly")
+                + "    WASD mouse    space up    C cutaway    Esc map";
+        font.draw(batch, status, 12, height - 8);
+        batch.end();
+    }
+
+    private void steerFly(float dt) {
+        if (Gdx.input.isCursorCatched()) {
+            flyYaw += Gdx.input.getDeltaX() * 0.15f;
+            flyPitch = MathUtils.clamp(flyPitch - Gdx.input.getDeltaY() * 0.15f, -89f, 89f);
+        }
+        float yawRad = flyYaw * MathUtils.degreesToRadians;
+        float pitchRad = flyPitch * MathUtils.degreesToRadians;
+        float cp = MathUtils.cos(pitchRad);
+        float fx = MathUtils.sin(yawRad) * cp;
+        float fy = MathUtils.sin(pitchRad);
+        float fz = -MathUtils.cos(yawRad) * cp;
+        float rx = MathUtils.cos(yawRad);
+        float rz = MathUtils.sin(yawRad);
+        float mx = 0f;
+        float my = 0f;
+        float mz = 0f;
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            mx += fx;
+            my += fy;
+            mz += fz;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            mx -= fx;
+            my -= fy;
+            mz -= fz;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+            mx += rx;
+            mz += rz;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+            mx -= rx;
+            mz -= rz;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+            my += 1f;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT)) {
+            my -= 1f;
+        }
+        float len2 = mx * mx + my * my + mz * mz;
+        if (len2 < 1e-8f) {
+            return;
+        }
+        float len = (float) Math.sqrt(len2);
+        boolean fast = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+        float speed = (fast ? 110f : 36f) * dt / len;
+        flyPos.x += mx * speed;
+        flyPos.y += my * speed;
+        flyPos.z += mz * speed;
+    }
+
+    private void frameFly(int width, int height) {
+        float yawRad = flyYaw * MathUtils.degreesToRadians;
+        float pitchRad = flyPitch * MathUtils.degreesToRadians;
+        float cp = MathUtils.cos(pitchRad);
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+        camera.position.set(flyPos);
+        camera.direction.set(MathUtils.sin(yawRad) * cp, MathUtils.sin(pitchRad), -MathUtils.cos(yawRad) * cp);
+        camera.up.set(0f, 1f, 0f);
+        camera.near = 0.2f;
+        camera.far = 8000f;
+        camera.update();
+    }
+
+    private void frameCutaway(int width, int height) {
+        float mapW = dungeon.grid.width * BlockChunks.VOXELS_PER_TILE;
+        float mapH = dungeon.grid.height * BlockChunks.VOXELS_PER_TILE;
+        float aspect = width / (float) Math.max(1, height);
+        float viewH = mapH * 1.06f / cutawayZoom;
+        float viewW = viewH * aspect;
+        topCamera.viewportWidth = viewW;
+        topCamera.viewportHeight = viewH;
+        float cx = mapW * 0.5f;
+        float cz = -mapH * 0.5f;
+        topCamera.position.set(cx, BlockChunks.HEIGHT + 80f, cz);
+        topCamera.up.set(0f, 0f, 1f);
+        topCamera.lookAt(cx, 0f, cz);
+        topCamera.near = 1f;
+        topCamera.far = BlockChunks.HEIGHT + 400f;
+        topCamera.update();
+    }
+
+    private void drawFlyChunks(Camera view, boolean ceilings) {
+        drawChunkList(view, flyShell);
+        if (ceilings) {
+            drawChunkList(view, flyCeiling);
+        }
+    }
+
+    private void drawChunkList(Camera view, List<DrawnChunk> chunks) {
+        for (DrawnChunk chunk : chunks) {
+            model.idt().translate(chunk.originX, 0f, -chunk.originY);
+            renderer.draw(view, chunk.mesh.parts, model);
+        }
     }
 
     private void pumpLoads(int height) {
@@ -650,7 +889,8 @@ public class JvmDcApp extends ApplicationAdapter {
             String status = "seed " + dungeon.seed
                     + "    rooms " + dungeon.rooms.size()
                     + (copiedTile.isEmpty() ? "" : "    copied " + copiedTile)
-                    + "    click a tile    N new    P marks";
+                    + (flyNote.isEmpty() ? "" : "    " + flyNote)
+                    + "    F fly    click a tile    N new    P marks";
             int textLeft = 12 + BTN_W + 10;
             int textRight = width - 12 - BTN_W - 10;
             font.draw(batch, fit(status, Math.max(12, textRight - textLeft)), textLeft, height - 8);
@@ -1280,5 +1520,18 @@ public class JvmDcApp extends ApplicationAdapter {
             }
         }
         return text.substring(0, lo) + "...";
+    }
+
+    /** One uploaded chunk. originY is the map axis; the mesh is placed at z = -originY. */
+    private static final class DrawnChunk {
+        final int originX;
+        final int originY;
+        final VoxMesher.VoxMesh mesh;
+
+        DrawnChunk(int originX, int originY, VoxMesher.VoxMesh mesh) {
+            this.originX = originX;
+            this.originY = originY;
+            this.mesh = mesh;
+        }
     }
 }
