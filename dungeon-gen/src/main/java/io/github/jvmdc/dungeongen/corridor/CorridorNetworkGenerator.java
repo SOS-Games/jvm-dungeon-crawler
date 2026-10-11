@@ -10,6 +10,7 @@ import io.github.jvmdc.dungeongen.common.RoomGraph;
 import io.github.jvmdc.dungeongen.common.SeededRandom;
 import io.github.jvmdc.dungeongen.common.Tile;
 import io.github.jvmdc.dungeongen.common.TileGrid;
+import io.github.jvmdc.dungeongen.place.PlacementPass;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +51,7 @@ public final class CorridorNetworkGenerator implements LayoutGenerator {
         Dungeon dungeon = new Dungeon(seed, config, grid, List.copyOf(rooms), List.copyOf(corridors),
                 RoomGraph.derive(grid, rooms), -1, -1);
         FeatureHooks.apply(dungeon, config);
+        PlacementPass.apply(dungeon);
         return dungeon;
     }
 

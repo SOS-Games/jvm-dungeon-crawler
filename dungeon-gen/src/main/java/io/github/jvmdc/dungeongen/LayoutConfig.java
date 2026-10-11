@@ -43,6 +43,20 @@ public final class LayoutConfig {
     public final double alcoveChance;
     public final double partitionChance;
     public final double hazardChance;
+    /** Chance this floor has a boss room near the exit stairs. */
+    public final double bossChance;
+    /** Chance this floor has a shop in a medium dead-end room. */
+    public final double shopChance;
+    /** Chance an open ground region gets a fountain. */
+    public final double fountainChance;
+    /** Chance a normal room gets one chest. Treasure rooms always get one. */
+    public final double chestChance;
+    /** Inclusive trap count for a full floor. Smaller maps use fewer. */
+    public final int trapMin;
+    public final int trapMax;
+    /** Inclusive count of monster, item, gold, and decor slots on a full floor. */
+    public final int spawnMin;
+    public final int spawnMax;
     public final List<FeaturePlacer> placers;
 
     public LayoutConfig(int width, int height, int roomCount,
@@ -171,6 +185,14 @@ public final class LayoutConfig {
         this.alcoveChance = alcoveChance;
         this.partitionChance = partitionChance;
         this.hazardChance = hazardChance;
+        this.bossChance = 0.35;
+        this.shopChance = 0.40;
+        this.fountainChance = 0.50;
+        this.chestChance = 0.40;
+        this.trapMin = 6;
+        this.trapMax = 10;
+        this.spawnMin = 30;
+        this.spawnMax = 40;
         this.placers = placers == null ? List.of() : List.copyOf(placers);
     }
 

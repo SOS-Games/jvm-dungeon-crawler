@@ -9,6 +9,7 @@ import io.github.jvmdc.dungeongen.common.RoomGraph;
 import io.github.jvmdc.dungeongen.common.SeededRandom;
 import io.github.jvmdc.dungeongen.common.Tile;
 import io.github.jvmdc.dungeongen.common.TileGrid;
+import io.github.jvmdc.dungeongen.place.PlacementPass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +83,7 @@ public final class AccretionGenerator implements LayoutGenerator {
         Dungeon dungeon = new Dungeon(seed, config, grid, List.copyOf(rooms), List.of(),
                 graph, stairs[0], stairs[1]);
         FeatureHooks.apply(dungeon, config);
+        PlacementPass.apply(dungeon);
         return dungeon;
     }
 

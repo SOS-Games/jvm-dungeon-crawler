@@ -19,6 +19,10 @@ import com.badlogic.gdx.utils.Align;
 import io.github.jvmdc.dungeongen.LayoutConfig;
 import io.github.jvmdc.dungeongen.Layouts;
 import io.github.jvmdc.dungeongen.common.Dungeon;
+import io.github.jvmdc.dungeongen.common.Facing;
+import io.github.jvmdc.dungeongen.common.Placement;
+import io.github.jvmdc.dungeongen.common.PlacementType;
+import io.github.jvmdc.dungeongen.common.Room;
 import io.github.jvmdc.dungeongen.common.Tile;
 import io.github.jvmdc.dungeongen.common.TileGrid;
 import io.github.jvmdc.render.ForwardRenderer;
@@ -66,6 +70,10 @@ public class JvmDcApp extends ApplicationAdapter {
     private Mode mode = Mode.MENU;
     private Dungeon dungeon;
     private long dungeonSeed = 1L;
+    /** Placement icons and room roles. P toggles them. */
+    private boolean showPlacements = true;
+    /** Last tile copied from a click, shown in the status line. */
+    private String copiedTile = "";
     private VoxCatalog.Entry selected;
     private float scroll;
     private float yaw;
@@ -173,6 +181,8 @@ public class JvmDcApp extends ApplicationAdapter {
                     mode = Mode.MENU;
                 } else if (picked == 1) {
                     nextDungeon();
+                } else {
+                    copyDungeonTile(screenX, screenY);
                 }
             }
             if (button == Input.Buttons.LEFT && mode == Mode.BROWSER && dx * dx + dy * dy < 36) {
@@ -233,6 +243,10 @@ public class JvmDcApp extends ApplicationAdapter {
             }
             if (keycode == Input.Keys.N && mode == Mode.DUNGEON) {
                 nextDungeon();
+                return true;
+            }
+            if (keycode == Input.Keys.P && mode == Mode.DUNGEON) {
+                showPlacements = !showPlacements;
                 return true;
             }
             if (keycode == Input.Keys.BACKSPACE && mode == Mode.BROWSER && searchFocus && query.length() > 0) {
@@ -389,6 +403,7 @@ public class JvmDcApp extends ApplicationAdapter {
 
     private void openDungeon() {
         dungeon = Layouts.of(Layouts.DEFAULT).generate(LayoutConfig.attached(), dungeonSeed);
+        copiedTile = "";
         mode = Mode.DUNGEON;
     }
 
@@ -608,7 +623,8 @@ public class JvmDcApp extends ApplicationAdapter {
         int header = 64;
         if (dungeon != null) {
             TileGrid grid = dungeon.grid;
-            int cell = Math.max(2, Math.min((width - 24) / grid.width, (height - header - 16) / grid.height));
+            int footer = showPlacements ? 36 : 16;
+            int cell = Math.max(2, Math.min((width - 24) / grid.width, (height - header - footer) / grid.height));
             int mapW = cell * grid.width;
             int originX = (width - mapW) / 2;
             int originTop = header + 8;
@@ -616,14 +632,25 @@ public class JvmDcApp extends ApplicationAdapter {
                 for (int x = 0; x < grid.width; x++) {
                     paintCell(grid.get(x, y));
                     int draw = Math.max(1, cell - 1);
-                    batch.draw(pixel, originX + x * cell, height - (originTop + (y + 1) * cell), draw, draw);
+                    float left = originX + x * cell;
+                    float bottom = height - (originTop + (y + 1) * cell);
+                    batch.draw(pixel, left, bottom, draw, draw);
+                    if (grid.get(x, y).isDoor()) {
+                        drawDoorLine(grid, x, y, left, bottom, draw);
+                    }
                 }
+            }
+            if (showPlacements) {
+                drawPlacements(dungeon, originX, originTop, cell, height);
+                drawRoomRoles(dungeon, originX, originTop, cell, height);
+                drawPlacementLegend(width, height);
             }
             batch.setColor(Color.WHITE);
             font.setColor(0.1f, 0.1f, 0.12f, 1f);
             String status = "seed " + dungeon.seed
                     + "    rooms " + dungeon.rooms.size()
-                    + "    N for another    Esc for the menu";
+                    + (copiedTile.isEmpty() ? "" : "    copied " + copiedTile)
+                    + "    click a tile    N new    P marks";
             int textLeft = 12 + BTN_W + 10;
             int textRight = width - 12 - BTN_W - 10;
             font.draw(batch, fit(status, Math.max(12, textRight - textLeft)), textLeft, height - 8);
@@ -653,6 +680,55 @@ public class JvmDcApp extends ApplicationAdapter {
             case PIT -> batch.setColor(0.05f, 0.05f, 0.06f, 1f);
             case TRAP_PLATE -> batch.setColor(0.7f, 0.25f, 0.25f, 1f);
         }
+    }
+
+    /** A line through a door, along the way it joins the two sides. */
+    private void drawDoorLine(TileGrid grid, int x, int y, float left, float bottom, int draw) {
+        if (draw < 3) {
+            return;
+        }
+        boolean north = passable(grid, x, y - 1);
+        boolean south = passable(grid, x, y + 1);
+        boolean east = passable(grid, x + 1, y);
+        boolean west = passable(grid, x - 1, y);
+        boolean vertical = north && south;
+        boolean horizontal = east && west;
+        if (!vertical && !horizontal) {
+            if (solid(grid, x - 1, y) && solid(grid, x + 1, y)) {
+                vertical = true;
+            }
+            if (solid(grid, x, y - 1) && solid(grid, x, y + 1)) {
+                horizontal = true;
+            }
+        }
+        if (!vertical && !horizontal) {
+            return;
+        }
+        int thick = Math.max(1, draw / 5);
+        float half = thick * 0.5f;
+        batch.setColor(0.15f, 0.1f, 0.05f, 1f);
+        if (vertical) {
+            batch.draw(pixel, left + draw * 0.5f - half, bottom, thick, draw);
+        }
+        if (horizontal) {
+            batch.draw(pixel, left, bottom + draw * 0.5f - half, draw, thick);
+        }
+    }
+
+    private boolean passable(TileGrid grid, int x, int y) {
+        if (!grid.inBounds(x, y)) {
+            return false;
+        }
+        Tile tile = grid.get(x, y);
+        return tile.isOpen() || tile.isDoor();
+    }
+
+    private boolean solid(TileGrid grid, int x, int y) {
+        if (!grid.inBounds(x, y)) {
+            return true;
+        }
+        Tile tile = grid.get(x, y);
+        return tile == Tile.WALL || tile == Tile.ROCK;
     }
 
     /** Colored swatches for every tile, under the seed line. */
@@ -686,6 +762,143 @@ public class JvmDcApp extends ApplicationAdapter {
         }
     }
 
+    private void drawPlacements(Dungeon dungeon, int originX, int originTop, int cell, int height) {
+        int mark = Math.max(2, cell / 2);
+        int pad = Math.max(0, (cell - mark) / 2);
+        for (Placement placement : dungeon.placements) {
+            int draw = Math.max(1, mark - 1);
+            float left = originX + placement.x * cell + pad;
+            float bottom = height - (originTop + (placement.y + 1) * cell) + pad;
+            drawMark(placement.type, left, bottom, draw);
+            if (placement.facing != Facing.NONE && draw >= 3) {
+                float centerX = left + draw * 0.5f;
+                float centerY = bottom + draw * 0.5f;
+                int thick = Math.max(1, draw / 4);
+                float half = thick * 0.5f;
+                float reach = draw * 0.5f;
+                batch.setColor(0.15f, 0.1f, 0.05f, 1f);
+                if (placement.facing.dx != 0) {
+                    float x0 = placement.facing.dx > 0 ? centerX : centerX - reach;
+                    batch.draw(pixel, x0, centerY - half, reach, thick);
+                } else {
+                    float y0 = placement.facing.dy < 0 ? centerY : centerY - reach;
+                    batch.draw(pixel, centerX - half, y0, thick, reach);
+                }
+            }
+        }
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawRoomRoles(Dungeon dungeon, int originX, int originTop, int cell, int height) {
+        if (cell < 8) {
+            return;
+        }
+        font.getData().setScale(cell >= 14 ? 0.7f : 0.5f);
+        font.setColor(0.95f, 0.95f, 0.9f, 1f);
+        for (Room room : dungeon.rooms) {
+            String role = roomRole(dungeon, room);
+            if (role.isEmpty()) {
+                continue;
+            }
+            layout.setText(font, role);
+            float x = originX + room.centerX * cell + cell * 0.5f - layout.width * 0.5f;
+            float y = height - (originTop + room.centerY * cell) - 2f;
+            font.draw(batch, role, x, y);
+        }
+        font.getData().setScale(1f);
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
+    }
+
+    private static String roomRole(Dungeon dungeon, Room room) {
+        TileGrid grid = dungeon.grid;
+        String role = "";
+        for (Placement placement : dungeon.placements) {
+            if (placement.roomId != room.id) {
+                continue;
+            }
+            if (placement.type == PlacementType.SHOP) {
+                return "shop";
+            }
+            if (placement.type == PlacementType.BOSS_SPAWN) {
+                role = "boss";
+            } else if (role.isEmpty() && placement.tags.contains("treasure")) {
+                role = "treasure";
+            }
+        }
+        if (!role.isEmpty()) {
+            return role;
+        }
+        if (dungeon.stairsUp >= 0 && room.contains(grid.x(dungeon.stairsUp), grid.y(dungeon.stairsUp))) {
+            return "start";
+        }
+        if (dungeon.stairsDown >= 0 && room.contains(grid.x(dungeon.stairsDown), grid.y(dungeon.stairsDown))) {
+            return "exit";
+        }
+        return "";
+    }
+
+    /** Colored marks for placements, along the bottom of the map view. */
+    private void drawPlacementLegend(int width, int height) {
+        PlacementType[] types = PlacementType.values();
+        String[] names = {
+                "trap", "chest", "monster", "item", "gold",
+                "light", "decor", "fountain", "shop", "boss"
+        };
+        int x = 12;
+        int y = 28;
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
+        for (int i = 0; i < types.length; i++) {
+            layout.setText(font, names[i]);
+            int item = 14 + (int) layout.width + 14;
+            if (x + item > width - 12) {
+                x = 12;
+                y += 18;
+            }
+            drawMark(types[i], x, y, 10);
+            batch.setColor(Color.WHITE);
+            font.setColor(0.1f, 0.1f, 0.12f, 1f);
+            font.draw(batch, names[i], x + 14, y + 10);
+            x += item;
+        }
+    }
+
+    /** Chest gets a cross. Gold is an outline. Everything else is a solid square. */
+    private void drawMark(PlacementType type, float x, float y, int size) {
+        if (type == PlacementType.GOLD) {
+            paintPlacement(type);
+            int edge = Math.max(1, size / 4);
+            batch.draw(pixel, x, y, size, edge);
+            batch.draw(pixel, x, y + size - edge, size, edge);
+            batch.draw(pixel, x, y, edge, size);
+            batch.draw(pixel, x + size - edge, y, edge, size);
+            return;
+        }
+        paintPlacement(type);
+        batch.draw(pixel, x, y, size, size);
+        if (type == PlacementType.CHEST && size >= 4) {
+            batch.setColor(0.25f, 0.12f, 0.05f, 1f);
+            int thick = Math.max(1, size / 5);
+            int arm = Math.max(2, size * 3 / 5);
+            batch.draw(pixel, x + (size - thick) / 2f, y + (size - arm) / 2f, thick, arm);
+            batch.draw(pixel, x + (size - arm) / 2f, y + (size - thick) / 2f, arm, thick);
+        }
+    }
+
+    private void paintPlacement(PlacementType type) {
+        switch (type) {
+            case TRAP -> batch.setColor(0.9f, 0.2f, 0.2f, 1f);
+            case CHEST -> batch.setColor(0.95f, 0.75f, 0.2f, 1f);
+            case MONSTER_SPAWN -> batch.setColor(0.75f, 0.15f, 0.2f, 1f);
+            case ITEM_SPAWN -> batch.setColor(0.3f, 0.75f, 0.4f, 1f);
+            case GOLD -> batch.setColor(1f, 0.85f, 0.3f, 1f);
+            case LIGHT -> batch.setColor(1f, 0.95f, 0.55f, 1f);
+            case DECOR -> batch.setColor(0.6f, 0.45f, 0.3f, 1f);
+            case FOUNTAIN -> batch.setColor(0.3f, 0.7f, 0.85f, 1f);
+            case SHOP -> batch.setColor(0.45f, 0.55f, 0.9f, 1f);
+            case BOSS_SPAWN -> batch.setColor(0.85f, 0.15f, 0.45f, 1f);
+        }
+    }
+
     private int menuX(int width) {
         return (width - MENU_W) / 2;
     }
@@ -708,6 +921,86 @@ public class JvmDcApp extends ApplicationAdapter {
             }
         }
         return -1;
+    }
+
+    /** Copies the tile type and every mark on that square. */
+    private void copyDungeonTile(int screenX, int screenY) {
+        if (dungeon == null) {
+            return;
+        }
+        int width = Gdx.graphics.getWidth();
+        int height = Gdx.graphics.getHeight();
+        TileGrid grid = dungeon.grid;
+        int header = 64;
+        int footer = showPlacements ? 36 : 16;
+        int cell = Math.max(2, Math.min((width - 24) / grid.width, (height - header - footer) / grid.height));
+        int originX = (width - cell * grid.width) / 2;
+        int originTop = header + 8;
+        int x = (screenX - originX) / cell;
+        int y = (screenY - originTop) / cell;
+        if (cell <= 0 || !grid.inBounds(x, y)) {
+            return;
+        }
+        String text = describeTile(x, y);
+        if (Gdx.app.getClipboard() != null) {
+            Gdx.app.getClipboard().setContents(text);
+        }
+        copiedTile = x + "," + y;
+    }
+
+    private String describeTile(int x, int y) {
+        TileGrid grid = dungeon.grid;
+        StringBuilder out = new StringBuilder();
+        out.append(x).append(',').append(y).append(' ').append(grid.get(x, y)).append('\n');
+        Room room = null;
+        for (Room candidate : dungeon.rooms) {
+            if (candidate.contains(x, y)) {
+                room = candidate;
+                break;
+            }
+        }
+        if (room != null) {
+            String role = roomRole(dungeon, room);
+            out.append("room ").append(room.id);
+            if (!role.isEmpty()) {
+                out.append(' ').append(role);
+            }
+            out.append('\n');
+        }
+        int marks = 0;
+        for (Placement placement : dungeon.placements) {
+            if (placement.x != x || placement.y != y) {
+                continue;
+            }
+            marks++;
+            out.append(placement.type);
+            if (placement.facing != Facing.NONE) {
+                out.append(" facing ").append(placement.facing);
+            }
+            if (placement.trap != null) {
+                out.append(' ').append(placement.trap);
+            }
+            if (placement.roomId >= 0) {
+                out.append(" room ").append(placement.roomId);
+            }
+            if (placement.regionId >= 0) {
+                out.append(" region ").append(placement.regionId);
+            }
+            if (placement.dangerTier >= 0) {
+                out.append(" tier ").append(placement.dangerTier);
+            }
+            if (!placement.tags.isEmpty()) {
+                out.append(" tags");
+                for (String tag : placement.tags) {
+                    out.append(' ').append(tag);
+                }
+            }
+            out.append('\n');
+        }
+        if (marks == 0) {
+            out.append("nothing placed\n");
+        }
+        return out.toString();
     }
 
     /** 0 is Menu, 1 is New, -1 is neither. */
