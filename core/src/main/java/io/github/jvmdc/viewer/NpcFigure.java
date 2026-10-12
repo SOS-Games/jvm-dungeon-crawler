@@ -2,6 +2,7 @@ package io.github.jvmdc.viewer;
 
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import io.github.jvmdc.assets.AssetRoots;
 import io.github.jvmdc.converter.VoxMesher;
 import io.github.jvmdc.converter.VoxReader;
 
@@ -125,6 +126,22 @@ final class NpcFigure {
         assemblies.addAll(animals(assetsRoot));
         assemblies.addAll(players(assetsRoot));
         return assemblies;
+    }
+
+    private static List<Assembly> bodies;
+    private static Path bodiesRoot;
+
+    /** Animals and large bipeds only, so a floor does not have to dress every person. */
+    static List<Assembly> bodies(Path assetsRoot) throws IOException {
+        if (bodies != null && assetsRoot.equals(bodiesRoot)) {
+            return bodies;
+        }
+        List<Assembly> list = new ArrayList<>();
+        list.addAll(largeBipeds(assetsRoot));
+        list.addAll(animals(assetsRoot));
+        bodies = List.copyOf(list);
+        bodiesRoot = assetsRoot;
+        return bodies;
     }
 
     /**
@@ -461,11 +478,15 @@ final class NpcFigure {
         return VoxMesher.build(combined);
     }
 
-    /** Converted manifests live in this project's assets folder, not in Veloren. */
+    /** Converted manifests live in this project's assets folder. */
     private static Path jsonManifest(String filename) {
         Path local = Path.of("assets", "voxygen", "voxel", filename);
         if (Files.isRegularFile(local)) {
             return local;
+        }
+        Path stored = AssetRoots.locate().assets.resolve("voxygen").resolve("voxel").resolve(filename);
+        if (Files.isRegularFile(stored)) {
+            return stored;
         }
         return Path.of("voxygen", "voxel", filename);
     }

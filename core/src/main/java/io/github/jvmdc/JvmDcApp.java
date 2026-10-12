@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
@@ -21,6 +22,9 @@ import com.badlogic.gdx.utils.Align;
 import io.github.jvmdc.debug.LoadTrace;
 import io.github.jvmdc.dungeongen.LayoutConfig;
 import io.github.jvmdc.dungeongen.place.PlacementBudget;
+import io.github.jvmdc.monster.MonsterSpawner;
+import io.github.jvmdc.monster.MonsterTable;
+import io.github.jvmdc.monster.MonsterView;
 import io.github.jvmdc.dungeongen.Layouts;
 import io.github.jvmdc.dungeongen.common.Dungeon;
 import io.github.jvmdc.dungeongen.common.Facing;
@@ -32,6 +36,7 @@ import io.github.jvmdc.dungeongen.common.TileGrid;
 import io.github.jvmdc.assets.AssetRoots;
 import io.github.jvmdc.assets.ModelPaths;
 import io.github.jvmdc.converter.VoxMesher;
+import io.github.jvmdc.prop.AimPick;
 import io.github.jvmdc.prop.PropCatalog;
 import io.github.jvmdc.prop.PropSpawner;
 import io.github.jvmdc.prop.PropView;
@@ -96,6 +101,13 @@ public class JvmDcApp extends ApplicationAdapter {
     /** Top-down view with ceiling slabs hidden. */
     private boolean cutaway;
     private float cutawayZoom = 1f;
+    /** H hides the ceiling slabs while flying. */
+    private boolean showCeiling = true;
+    private ShapeRenderer shapes;
+    private final Vector3 arrowPoint = new Vector3();
+    private final float[] arrowScreen = new float[6];
+    private final Vector3 aimOrigin = new Vector3();
+    private final Vector3 aimDir = new Vector3();
     private long flySeed = Long.MIN_VALUE;
     private final Vector3 flyPos = new Vector3();
     private float flyYaw;
@@ -110,6 +122,11 @@ public class JvmDcApp extends ApplicationAdapter {
     private PropCatalog propCatalog;
     private Engine props;
     private PropView propView;
+    private MonsterView monsterView;
+    private MonsterTable monsterTable;
+    /** M hides or shows the bodies rolled from monster marks. */
+    private boolean showMonsters = true;
+    private int monsterCount;
     private VoxCatalog.Entry selected;
     private float scroll;
     private float yaw;
@@ -295,6 +312,10 @@ public class JvmDcApp extends ApplicationAdapter {
                 Gdx.input.getDeltaY();
                 return true;
             }
+            if (keycode == Input.Keys.H && mode == Mode.FLY) {
+                showCeiling = !showCeiling;
+                return true;
+            }
             if (keycode == Input.Keys.F && mode == Mode.DUNGEON) {
                 enterFly();
                 return true;
@@ -313,6 +334,11 @@ public class JvmDcApp extends ApplicationAdapter {
             }
             if (keycode == Input.Keys.P && mode == Mode.DUNGEON) {
                 showPlacements = !showPlacements;
+                return true;
+            }
+            if (keycode == Input.Keys.M && (mode == Mode.DUNGEON || mode == Mode.FLY)) {
+                showMonsters = !showMonsters;
+                applyMonsterToggle();
                 return true;
             }
             if (keycode == Input.Keys.BACKSPACE && mode == Mode.BROWSER && searchFocus && query.length() > 0) {
@@ -343,6 +369,7 @@ public class JvmDcApp extends ApplicationAdapter {
         pixmap.dispose();
         renderer = new ForwardRenderer();
         batch = new SpriteBatch();
+        shapes = new ShapeRenderer();
         font = new BitmapFont();
         font.setColor(0.1f, 0.1f, 0.12f, 1f);
         layout = new GlyphLayout();
@@ -397,6 +424,9 @@ public class JvmDcApp extends ApplicationAdapter {
         }
         if (batch != null) {
             batch.dispose();
+        }
+        if (shapes != null) {
+            shapes.dispose();
         }
         if (font != null) {
             font.dispose();
@@ -484,6 +514,7 @@ public class JvmDcApp extends ApplicationAdapter {
         disposeFly();
         PlacementBudget.density = placeDensity;
         dungeon = Layouts.of(Layouts.DEFAULT).generate(LayoutConfig.attached(), dungeonSeed);
+        refreshMonsterCount();
         copiedTile = "";
         flyNote = "";
         cutaway = false;
@@ -491,6 +522,45 @@ public class JvmDcApp extends ApplicationAdapter {
         if (flying) {
             enterFly();
         }
+    }
+
+    private MonsterTable loadMonsters() {
+        if (monsterTable == null) {
+            try {
+                monsterTable = MonsterTable.load();
+            } catch (IOException e) {
+                monsterTable = null;
+            }
+        }
+        return monsterTable;
+    }
+
+    private void refreshMonsterCount() {
+        if (dungeon == null || !showMonsters || loadMonsters() == null) {
+            monsterCount = 0;
+            return;
+        }
+        monsterCount = MonsterSpawner.plan(dungeon, monsterTable, 0).size();
+    }
+
+    private void applyMonsterToggle() {
+        if (props == null || loadMonsters() == null) {
+            refreshMonsterCount();
+            return;
+        }
+        MonsterSpawner.clear(props);
+        if (showMonsters) {
+            MonsterSpawner.add(props, dungeon, monsterTable, 0);
+            if (monsterView != null) {
+                monsterView.setScale(monsterTable.worldScale());
+                monsterView.attach(props);
+            }
+        }
+        monsterCount = MonsterSpawner.count(props);
+    }
+
+    private String monsterLabel() {
+        return showMonsters ? "monsters " + monsterCount : "monsters off";
     }
 
     private void nextDungeon() {
@@ -583,9 +653,22 @@ public class JvmDcApp extends ApplicationAdapter {
             trace.begin("place props");
             try {
                 props = PropSpawner.populate(dungeon, propCatalog, trace);
+                MonsterTable monsters = loadMonsters();
+                if (showMonsters && monsters != null) {
+                    MonsterSpawner.add(props, dungeon, monsters, 0);
+                }
             } finally {
                 trace.end();
             }
+            if (monsterView == null) {
+                monsterView = new MonsterView();
+            }
+            MonsterTable monsters = loadMonsters();
+            if (monsters != null) {
+                monsterView.setScale(monsters.worldScale());
+            }
+            monsterView.attach(props);
+            monsterCount = MonsterSpawner.count(props);
             placeFlySpawn();
             flySeed = dungeon.seed;
             cutaway = false;
@@ -659,6 +742,10 @@ public class JvmDcApp extends ApplicationAdapter {
         flyCeiling.clear();
         flySeed = Long.MIN_VALUE;
         props = null;
+        if (monsterView != null) {
+            monsterView.dispose();
+            monsterView = null;
+        }
     }
 
     private void renderFly(int width, int height) {
@@ -681,17 +768,25 @@ public class JvmDcApp extends ApplicationAdapter {
             propView.uploadLights(props, view, cutaway, renderer);
         }
         renderer.setFaceNoise(true);
-        drawFlyChunks(view, !cutaway);
+        drawFlyChunks(view, showCeiling && !cutaway);
         renderer.setFaceNoise(false);
         if (propView != null) {
             propView.draw(props, renderer, view, model);
         }
+        if (monsterView != null && showMonsters) {
+            monsterView.tick(dt);
+            monsterView.draw(props, renderer, view);
+        }
         renderer.end(false);
+        if (cutaway) {
+            drawCameraArrow(width, height);
+        }
         beginText(width, height);
         font.setColor(0.1f, 0.1f, 0.12f, 1f);
         String status = "seed " + dungeon.seed
-                + (cutaway ? "    top-down, ceilings hidden" : "    fly")
-                + "    WASD mouse    space up    C cutaway    Esc map";
+                + (cutaway ? "    top-down" : (showCeiling ? "    fly" : "    fly, ceiling off"))
+                + "    " + monsterLabel()
+                + "    WASD mouse    space up    C cutaway    H ceiling    M monsters    Esc map";
         font.draw(batch, status, 12, height - 8);
         if (!flyLoadNote.isEmpty()) {
             String[] lines = flyLoadNote.split("\n");
@@ -707,7 +802,35 @@ public class JvmDcApp extends ApplicationAdapter {
             }
         }
         font.setColor(0.1f, 0.1f, 0.12f, 1f);
+        drawAimLabel(view, width, height);
         batch.end();
+    }
+
+    /** Small name under the middle of the view for whatever the look ray meets. */
+    private void drawAimLabel(Camera view, int width, int height) {
+        String name = aimedName(view, width, height);
+        if (name.isEmpty()) {
+            return;
+        }
+        layout.setText(font, name);
+        float x = (width - layout.width) * 0.5f;
+        float y = height * 0.5f - 18f;
+        font.setColor(0f, 0f, 0f, 0.9f);
+        font.draw(batch, name, x + 1f, y - 1f);
+        font.setColor(0.97f, 0.95f, 0.9f, 1f);
+        font.draw(batch, name, x, y);
+    }
+
+    private String aimedName(Camera view, int width, int height) {
+        if (cutaway) {
+            aimOrigin.set(Gdx.input.getX(), Gdx.input.getY(), 0f);
+            aimDir.set(Gdx.input.getX(), Gdx.input.getY(), 1f);
+            view.unproject(aimOrigin, 0, 0, width, height);
+            view.unproject(aimDir, 0, 0, width, height);
+            aimDir.sub(aimOrigin);
+            return AimPick.find(dungeon, props, aimOrigin, aimDir, false);
+        }
+        return AimPick.find(dungeon, props, view.position, view.direction, showCeiling);
     }
 
     private void steerFly(float dt) {
@@ -792,6 +915,69 @@ public class JvmDcApp extends ApplicationAdapter {
         topCamera.near = ViewRange.near();
         topCamera.far = BlockChunks.HEIGHT + 80f + BlockChunks.VOXELS_PER_TILE;
         topCamera.update();
+    }
+
+    /** Arrow on the top-down map: tail is the fly camera, tip is the way it faces. */
+    private void drawCameraArrow(int width, int height) {
+        float yawRad = flyYaw * MathUtils.degreesToRadians;
+        float dx = MathUtils.sin(yawRad);
+        float dz = -MathUtils.cos(yawRad);
+        float px = -dz;
+        float pz = dx;
+        float tile = BlockChunks.VOXELS_PER_TILE;
+        float len = tile * 2.4f;
+        float head = len * 0.42f;
+        float y = BlockChunks.FLOOR + 8f;
+        float x = flyPos.x;
+        float z = flyPos.z;
+        float edge = tile * 0.1f;
+        float lenOut = len + edge;
+        uiCamera.setToOrtho(false, width, height);
+        shapes.setProjectionMatrix(uiCamera.combined);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        arrow(width, height, x, y, z, x + dx * (lenOut - head), z + dz * (lenOut - head), dx, dz, px, pz,
+                lenOut, tile * 0.18f, tile * 0.46f, 0.12f, 0.1f, 0.08f);
+        arrow(width, height, x, y, z, x + dx * (len - head), z + dz * (len - head), dx, dz, px, pz,
+                len, tile * 0.1f, tile * 0.3f, 1f, 0.86f, 0.15f);
+        shapes.end();
+    }
+
+    private void arrow(int width, int height, float x, float y, float z, float hx, float hz,
+            float dx, float dz, float px, float pz, float len, float shaft, float wing,
+            float r, float g, float b) {
+        shapes.setColor(r, g, b, 1f);
+        tri(width, height,
+                x + px * shaft, y, z + pz * shaft,
+                hx + px * shaft, y, hz + pz * shaft,
+                hx - px * shaft, y, hz - pz * shaft);
+        tri(width, height,
+                x + px * shaft, y, z + pz * shaft,
+                hx - px * shaft, y, hz - pz * shaft,
+                x - px * shaft, y, z - pz * shaft);
+        tri(width, height,
+                x + dx * len, y, z + dz * len,
+                hx + px * wing, y, hz + pz * wing,
+                hx - px * wing, y, hz - pz * wing);
+    }
+
+    private void tri(int width, int height,
+            float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3) {
+        project(width, height, x1, y1, z1);
+        arrowScreen[0] = arrowPoint.x;
+        arrowScreen[1] = arrowPoint.y;
+        project(width, height, x2, y2, z2);
+        arrowScreen[2] = arrowPoint.x;
+        arrowScreen[3] = arrowPoint.y;
+        project(width, height, x3, y3, z3);
+        arrowScreen[4] = arrowPoint.x;
+        arrowScreen[5] = arrowPoint.y;
+        shapes.triangle(arrowScreen[0], arrowScreen[1], arrowScreen[2], arrowScreen[3],
+                arrowScreen[4], arrowScreen[5]);
+    }
+
+    private void project(int width, int height, float x, float y, float z) {
+        arrowPoint.set(x, y, z);
+        topCamera.project(arrowPoint, 0, 0, width, height);
     }
 
     private void drawFlyChunks(Camera view, boolean ceilings) {
@@ -1077,7 +1263,8 @@ public class JvmDcApp extends ApplicationAdapter {
                     + (copiedTile.isEmpty() ? "" : "    copied " + copiedTile)
                     + (flyNote.isEmpty() ? "" : "    " + flyNote)
                     + "    density " + densityLabel(placeDensity)
-                    + "    F fly    click a tile    N new    P marks";
+                    + "    " + monsterLabel()
+                    + "    F fly    click a tile    N new    P marks    M monsters";
             int textLeft = 12 + BTN_W + 10;
             int textRight = width - 12 - BTN_W - 10;
             font.draw(batch, fit(status, Math.max(12, textRight - textLeft)), textLeft, height - 8);

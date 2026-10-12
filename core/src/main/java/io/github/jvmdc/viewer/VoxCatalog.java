@@ -1,6 +1,7 @@
 package io.github.jvmdc.viewer;
 
 import com.badlogic.gdx.Gdx;
+import io.github.jvmdc.assets.AssetRoots;
 import io.github.jvmdc.converter.Converter;
 import io.github.jvmdc.converter.VoxMesher;
 import io.github.jvmdc.converter.VoxReader;
@@ -19,9 +20,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Every .vox file under the Veloren assets folder. A small biped whose parts
- * live in one folder becomes one tile. Those part files stay in the list until
- * that body builds, then they drop out of All parts. Weapons stay listed.
+ * Every .vox file under the asset folder, plus the custom voxel folder.
+ * A small biped whose parts live in one folder becomes one tile. Those part
+ * files stay in the list until that body builds, then they drop out of All parts.
+ * Weapons stay listed.
  */
 public final class VoxCatalog {
     public static final class Entry {
@@ -76,6 +78,7 @@ public final class VoxCatalog {
         private int figureIndex;
         private Set<String> builtParts = new HashSet<>();
         private int armed;
+        private boolean customListed;
 
         public VoxCatalog catalog() {
             return catalog;
@@ -140,6 +143,10 @@ public final class VoxCatalog {
             }
             if (!files.hasNext()) {
                 closeWalk();
+                if (!customListed) {
+                    customListed = true;
+                    catalog.entries.addAll(listFolder(AssetRoots.locate().custom, "assets/custom/"));
+                }
                 phase = Phase.FIGURES;
                 return;
             }
@@ -236,6 +243,23 @@ public final class VoxCatalog {
                 entry.rig = null;
             }
         }
+    }
+
+    /** .vox files under a folder. The prefix is put in front of each relative path. */
+    static List<Entry> listFolder(Path folder, String prefix) throws IOException {
+        List<Entry> found = new ArrayList<>();
+        if (folder == null || !Files.isDirectory(folder)) {
+            return found;
+        }
+        try (Stream<Path> walk = Files.walk(folder)) {
+            for (Path file : walk.filter(path -> path.getFileName().toString().toLowerCase().endsWith(".vox")).toList()) {
+                String filename = file.getFileName().toString();
+                String name = filename.substring(0, filename.length() - 4);
+                String rel = folder.relativize(file).toString().replace('\\', '/');
+                found.add(new Entry(name, prefix + rel, file.toFile()));
+            }
+        }
+        return found;
     }
 
     private static String relative(Path root, Path file) {

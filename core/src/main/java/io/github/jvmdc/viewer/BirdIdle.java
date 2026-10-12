@@ -5,7 +5,7 @@
  */
 package io.github.jvmdc.viewer;
 
-import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
@@ -154,7 +154,7 @@ public final class BirdIdle {
             }
         }
 
-        public void draw(ForwardRenderer renderer, PerspectiveCamera camera, Matrix4 view) {
+        public void draw(ForwardRenderer renderer, Camera camera, Matrix4 view) {
             compose();
             for (Part part : parts) {
                 if (part.mesh.parts.length == 0) {

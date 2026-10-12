@@ -7,7 +7,7 @@
  */
 package io.github.jvmdc.viewer;
 
-import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
@@ -255,7 +255,7 @@ public final class AnimalIdle {
         }
 
         @Override
-        public void draw(ForwardRenderer renderer, PerspectiveCamera camera, Matrix4 view) {
+        public void draw(ForwardRenderer renderer, Camera camera, Matrix4 view) {
             compose();
             for (Part part : parts) {
                 if (part.mesh.parts.length == 0) {
@@ -264,6 +264,48 @@ public final class AnimalIdle {
                 draw.set(view).mul(ROOT_FIX).mul(recenter).mul(bones[part.bone]);
                 renderer.draw(camera, part.mesh.parts, draw);
             }
+        }
+
+        /** Bounds after the body is stood up. Y is up, and the middle sits on the origin. */
+        @Override
+        public float[] stoodBounds() {
+            compose();
+            float minX = Float.POSITIVE_INFINITY;
+            float minY = Float.POSITIVE_INFINITY;
+            float minZ = Float.POSITIVE_INFINITY;
+            float maxX = Float.NEGATIVE_INFINITY;
+            float maxY = Float.NEGATIVE_INFINITY;
+            float maxZ = Float.NEGATIVE_INFINITY;
+            Matrix4 stood = new Matrix4();
+            boolean any = false;
+            for (Part part : parts) {
+                VoxMesher.VoxMesh mesh = part.mesh;
+                if (mesh.parts.length == 0 || mesh.minX > mesh.maxX) {
+                    continue;
+                }
+                any = true;
+                stood.set(ROOT_FIX).mul(recenter).mul(bones[part.bone]);
+                float[] xs = {mesh.minX, mesh.maxX};
+                float[] ys = {mesh.minY, mesh.maxY};
+                float[] zs = {mesh.minZ, mesh.maxZ};
+                for (float x : xs) {
+                    for (float y : ys) {
+                        for (float z : zs) {
+                            corner.set(x, y, z).mul(stood);
+                            minX = Math.min(minX, corner.x);
+                            minY = Math.min(minY, corner.y);
+                            minZ = Math.min(minZ, corner.z);
+                            maxX = Math.max(maxX, corner.x);
+                            maxY = Math.max(maxY, corner.y);
+                            maxZ = Math.max(maxZ, corner.z);
+                        }
+                    }
+                }
+            }
+            if (!any) {
+                return new float[] {0f, 0f, 0f, 0f, 0f, 0f};
+            }
+            return new float[] {minX, minY, minZ, maxX, maxY, maxZ};
         }
 
         @Override
