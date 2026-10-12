@@ -20,6 +20,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Align;
 import io.github.jvmdc.debug.LoadTrace;
 import io.github.jvmdc.dungeongen.LayoutConfig;
+import io.github.jvmdc.dungeongen.place.PlacementBudget;
 import io.github.jvmdc.dungeongen.Layouts;
 import io.github.jvmdc.dungeongen.common.Dungeon;
 import io.github.jvmdc.dungeongen.common.Facing;
@@ -85,6 +86,9 @@ public class JvmDcApp extends ApplicationAdapter {
     private Mode mode = Mode.MENU;
     private Dungeon dungeon;
     private long dungeonSeed = 1L;
+    /** Placement fullness. Half, normal, one and a half, or double. */
+    private double placeDensity = 1.0;
+    private static final double[] DENSITY_STEPS = {0.5, 1.0, 1.5, 2.0};
     /** Placement icons and room roles. P toggles them. */
     private boolean showPlacements = true;
     /** Last tile copied from a click, shown in the status line. */
@@ -213,6 +217,9 @@ public class JvmDcApp extends ApplicationAdapter {
                     mode = Mode.MENU;
                 } else if (picked == 1) {
                     nextDungeon();
+                } else if (picked >= 10) {
+                    placeDensity = DENSITY_STEPS[picked - 10];
+                    openDungeon();
                 } else {
                     copyDungeonTile(screenX, screenY);
                 }
@@ -475,6 +482,7 @@ public class JvmDcApp extends ApplicationAdapter {
         boolean flying = mode == Mode.FLY || flyBuild != null;
         flyBuild = null;
         disposeFly();
+        PlacementBudget.density = placeDensity;
         dungeon = Layouts.of(Layouts.DEFAULT).generate(LayoutConfig.attached(), dungeonSeed);
         copiedTile = "";
         flyNote = "";
@@ -1068,6 +1076,7 @@ public class JvmDcApp extends ApplicationAdapter {
                     + "    rooms " + dungeon.rooms.size()
                     + (copiedTile.isEmpty() ? "" : "    copied " + copiedTile)
                     + (flyNote.isEmpty() ? "" : "    " + flyNote)
+                    + "    density " + densityLabel(placeDensity)
                     + "    F fly    click a tile    N new    P marks";
             int textLeft = 12 + BTN_W + 10;
             int textRight = width - 12 - BTN_W - 10;
@@ -1077,6 +1086,16 @@ public class JvmDcApp extends ApplicationAdapter {
         int bottom = height - 4 - BTN_H;
         chip(12, bottom, "Menu", false);
         chip(width - 12 - BTN_W, bottom, "New", false);
+        int densityW = 52;
+        int densityGap = 6;
+        int densityTotal = DENSITY_STEPS.length * densityW + (DENSITY_STEPS.length - 1) * densityGap;
+        int densityLeft = (width - densityTotal) / 2;
+        int densityBottom = height - 28 - BTN_H;
+        for (int i = 0; i < DENSITY_STEPS.length; i++) {
+            boolean on = Math.abs(placeDensity - DENSITY_STEPS[i]) < 0.01;
+            chip(densityLeft + i * (densityW + densityGap), densityBottom, densityW, BTN_H,
+                    densityLabel(DENSITY_STEPS[i]), on);
+        }
         batch.end();
     }
 
@@ -1280,15 +1299,16 @@ public class JvmDcApp extends ApplicationAdapter {
         }
     }
 
-    /** Chest gets a cross. Gold is an outline. Everything else is a solid square. */
+    /** Chest gets a cross. A monster gets an X. Gold, decor, and fountains are a square outline. Shop and boss are a Z. */
     private void drawMark(PlacementType type, float x, float y, int size) {
-        if (type == PlacementType.GOLD) {
+        if (type == PlacementType.GOLD || type == PlacementType.DECOR || type == PlacementType.FOUNTAIN) {
             paintPlacement(type);
-            int edge = Math.max(1, size / 4);
-            batch.draw(pixel, x, y, size, edge);
-            batch.draw(pixel, x, y + size - edge, size, edge);
-            batch.draw(pixel, x, y, edge, size);
-            batch.draw(pixel, x + size - edge, y, edge, size);
+            drawSquareOutline(x, y, size);
+            return;
+        }
+        if (type == PlacementType.SHOP || type == PlacementType.BOSS_SPAWN) {
+            paintPlacement(type);
+            drawZ(x, y, size);
             return;
         }
         paintPlacement(type);
@@ -1299,6 +1319,51 @@ public class JvmDcApp extends ApplicationAdapter {
             int arm = Math.max(2, size * 3 / 5);
             batch.draw(pixel, x + (size - thick) / 2f, y + (size - arm) / 2f, thick, arm);
             batch.draw(pixel, x + (size - arm) / 2f, y + (size - thick) / 2f, arm, thick);
+        }
+        if (type == PlacementType.MONSTER_SPAWN && size >= 4) {
+            batch.setColor(0.95f, 0.9f, 0.88f, 1f);
+            drawX(x, y, size);
+        }
+    }
+
+    private void drawSquareOutline(float x, float y, int size) {
+        int edge = Math.max(1, size / 4);
+        batch.draw(pixel, x, y, size, edge);
+        batch.draw(pixel, x, y + size - edge, size, edge);
+        batch.draw(pixel, x, y, edge, size);
+        batch.draw(pixel, x + size - edge, y, edge, size);
+    }
+
+    private void drawX(float x, float y, int size) {
+        int thick = Math.max(1, size / 5);
+        int inset = Math.max(1, size / 5);
+        float span = size - inset * 2f - thick;
+        float left = x + inset;
+        float bottom = y + inset;
+        if (span < 1f) {
+            span = Math.max(1f, size - thick);
+            left = x;
+            bottom = y;
+        }
+        int steps = Math.max(2, Math.round(span));
+        for (int i = 0; i < steps; i++) {
+            float t = i / (float) (steps - 1);
+            float along = span * t;
+            batch.draw(pixel, left + along, bottom + along, thick, thick);
+            batch.draw(pixel, left + span - along, bottom + along, thick, thick);
+        }
+    }
+
+    private void drawZ(float x, float y, int size) {
+        int edge = Math.max(1, size / 4);
+        batch.draw(pixel, x, y + size - edge, size, edge);
+        batch.draw(pixel, x, y, size, edge);
+        float span = Math.max(1f, size - edge);
+        int steps = Math.max(2, Math.round(span));
+        for (int i = 0; i < steps; i++) {
+            float t = i / (float) (steps - 1);
+            float along = span * (1f - t);
+            batch.draw(pixel, x + along, y + along, edge, edge);
         }
     }
 
@@ -1421,19 +1486,40 @@ public class JvmDcApp extends ApplicationAdapter {
         return out.toString();
     }
 
-    /** 0 is Menu, 1 is New, -1 is neither. */
+    /** 0 is Menu, 1 is New, 10–13 are density steps, -1 is neither. */
     private int dungeonButtonAt(int x, int y) {
-        if (y < 4 || y >= 4 + BTN_H) {
-            return -1;
+        if (y >= 4 && y < 4 + BTN_H) {
+            if (x >= 12 && x < 12 + BTN_W) {
+                return 0;
+            }
+            int newer = Gdx.graphics.getWidth() - 12 - BTN_W;
+            if (x >= newer && x < newer + BTN_W) {
+                return 1;
+            }
         }
-        if (x >= 12 && x < 12 + BTN_W) {
-            return 0;
-        }
-        int newer = Gdx.graphics.getWidth() - 12 - BTN_W;
-        if (x >= newer && x < newer + BTN_W) {
-            return 1;
+        if (y >= 28 && y < 28 + BTN_H) {
+            int densityW = 52;
+            int densityGap = 6;
+            int densityTotal = DENSITY_STEPS.length * densityW + (DENSITY_STEPS.length - 1) * densityGap;
+            int densityLeft = (Gdx.graphics.getWidth() - densityTotal) / 2;
+            for (int i = 0; i < DENSITY_STEPS.length; i++) {
+                int left = densityLeft + i * (densityW + densityGap);
+                if (x >= left && x < left + densityW) {
+                    return 10 + i;
+                }
+            }
         }
         return -1;
+    }
+
+    private static String densityLabel(double density) {
+        if (Math.abs(density - 0.5) < 0.01) {
+            return "0.5x";
+        }
+        if (Math.abs(density - 1.5) < 0.01) {
+            return "1.5x";
+        }
+        return (int) density + "x";
     }
 
     private void beginText(int width, int height) {

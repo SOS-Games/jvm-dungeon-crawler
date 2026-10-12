@@ -1,32 +1,61 @@
 placements seed 11
 LIGHT 9,0 S room=-1 region=0 tier=-1 trap=-
+DECOR 9,1 NONE room=-1 region=0 tier=0 trap=- tags=cluster,rubble
 LIGHT 10,2 S room=0 region=-1 tier=-1 trap=-
 LIGHT 17,2 S room=3 region=-1 tier=-1 trap=-
+DECOR 13,3 NONE room=0 region=-1 tier=0 trap=- tags=library,bookshelf
+DECOR 17,3 NONE room=3 region=-1 tier=1 trap=- tags=storage,crate
 LIGHT 7,4 S room=-1 region=1 tier=-1 trap=-
-CHEST 18,4 NONE room=3 region=-1 tier=-1 trap=-
+CHEST 16,4 NONE room=3 region=-1 tier=-1 trap=-
+DECOR 7,5 NONE room=-1 region=1 tier=0 trap=- tags=cluster,rubble
+ITEM_SPAWN 9,5 NONE room=0 region=-1 tier=0 trap=-
+DECOR 19,5 NONE room=3 region=-1 tier=1 trap=- tags=sink
+GOLD 17,6 NONE room=3 region=-1 tier=1 trap=-
+DECOR 19,6 NONE room=3 region=-1 tier=1 trap=- tags=storage,barrel
 LIGHT 7,7 S room=-1 region=2 tier=-1 trap=-
+DECOR 13,7 NONE room=0 region=-1 tier=0 trap=- tags=library,bookshelf
 LIGHT 14,7 S room=-1 region=2 tier=-1 trap=-
-LIGHT 18,7 N room=3 region=-1 tier=-1 trap=-
-LIGHT 20,7 S room=-1 region=2 tier=-1 trap=-
-FOUNTAIN 11,10 NONE room=-1 region=2 tier=-1 trap=-
-MONSTER_SPAWN 21,11 NONE room=-1 region=2 tier=0 trap=-
-LIGHT 5,13 E room=-1 region=2 tier=-1 trap=-
-LIGHT 13,13 W room=-1 region=2 tier=-1 trap=-
-MONSTER_SPAWN 15,13 NONE room=-1 region=2 tier=0 trap=-
-LIGHT 23,13 W room=-1 region=2 tier=-1 trap=-
-MONSTER_SPAWN 11,15 NONE room=-1 region=2 tier=0 trap=-
+LIGHT 19,7 S room=-1 region=2 tier=-1 trap=-
+MONSTER_SPAWN 16,8 NONE room=-1 region=2 tier=0 trap=- tags=group
+DECOR 6,10 NONE room=-1 region=2 tier=0 trap=- tags=cluster,pillar
+GOLD 8,10 NONE room=-1 region=2 tier=0 trap=- tags=scattered
+ITEM_SPAWN 14,10 NONE room=-1 region=2 tier=0 trap=- tags=scattered
+DECOR 6,11 NONE room=-1 region=2 tier=0 trap=- tags=cluster,stalagmite
+LIGHT 5,12 E room=-1 region=2 tier=-1 trap=-
+DECOR 6,12 NONE room=-1 region=2 tier=0 trap=- tags=cluster,rubble
+MONSTER_SPAWN 15,12 NONE room=-1 region=2 tier=0 trap=- tags=group
+GOLD 10,13 NONE room=-1 region=2 tier=0 trap=- tags=scattered
+DECOR 6,14 NONE room=-1 region=2 tier=0 trap=- tags=cluster,bones
+GOLD 10,14 NONE room=-1 region=2 tier=0 trap=- tags=scattered
+ITEM_SPAWN 20,14 NONE room=-1 region=2 tier=0 trap=- tags=scattered
+MONSTER_SPAWN 6,15 NONE room=-1 region=2 tier=0 trap=- tags=group
+MONSTER_SPAWN 11,15 NONE room=-1 region=2 tier=0 trap=- tags=group
 LIGHT 18,16 S room=2 region=-1 tier=-1 trap=-
-TRAP 20,16 S room=-1 region=-1 tier=-1 trap=ARROW_WALL
 LIGHT 23,16 S room=5 region=-1 tier=-1 trap=-
 LIGHT 10,17 S room=1 region=-1 tier=-1 trap=-
-ITEM_SPAWN 18,17 NONE room=2 region=-1 tier=1 trap=-
-TRAP 9,19 NONE room=1 region=-1 tier=-1 trap=SPIKE_FLOOR
-ITEM_SPAWN 12,21 NONE room=1 region=-1 tier=1 trap=-
-LIGHT 22,21 E room=5 region=-1 tier=-1 trap=-
-CHEST 24,21 NONE room=5 region=-1 tier=-1 trap=-
-MONSTER_SPAWN 11,22 NONE room=1 region=-1 tier=1 trap=-
+DECOR 19,17 NONE room=2 region=-1 tier=1 trap=- tags=library,rubble
+CHEST 24,17 NONE room=5 region=-1 tier=-1 trap=-
+DECOR 13,18 NONE room=1 region=-1 tier=1 trap=- tags=storage,crate
+ITEM_SPAWN 18,18 NONE room=2 region=-1 tier=1 trap=-
+CHEST 21,18 NONE room=2 region=-1 tier=-1 trap=-
+MONSTER_SPAWN 18,19 NONE room=2 region=-1 tier=1 trap=-
+DECOR 24,19 NONE room=5 region=-1 tier=2 trap=- tags=barracks,rack
+GOLD 23,20 NONE room=5 region=-1 tier=2 trap=-
+MONSTER_SPAWN 9,21 NONE room=1 region=-1 tier=1 trap=-
+ITEM_SPAWN 11,21 NONE room=1 region=-1 tier=1 trap=-
+DECOR 19,21 NONE room=2 region=-1 tier=1 trap=- tags=library,bookshelf
+DECOR 21,21 NONE room=2 region=-1 tier=1 trap=- tags=library,bookshelf
+DECOR 24,21 NONE room=5 region=-1 tier=2 trap=- tags=barracks,bunk
 LIGHT 18,22 S room=4 region=-1 tier=-1 trap=-
 LIGHT 24,22 S room=6 region=-1 tier=-1 trap=-
-LIGHT 8,23 E room=1 region=-1 tier=-1 trap=-
+DECOR 19,23 NONE room=4 region=-1 tier=2 trap=- tags=library,rubble
+GOLD 21,23 NONE room=4 region=-1 tier=2 trap=-
+DECOR 23,23 NONE room=6 region=-1 tier=3 trap=- tags=barracks,rubble
+TRAP 24,23 NONE room=6 region=-1 tier=-1 trap=BEAR_TRAP
+DECOR 9,24 NONE room=1 region=-1 tier=1 trap=- tags=storage,barrel
+DECOR 10,24 NONE room=1 region=-1 tier=1 trap=- tags=storage,crate
+DECOR 18,24 NONE room=4 region=-1 tier=2 trap=- tags=library,bookshelf
+DECOR 21,24 NONE room=4 region=-1 tier=2 trap=- tags=sink
+DECOR 23,24 NONE room=6 region=-1 tier=3 trap=- tags=barracks,rack
 CHEST 24,24 NONE room=6 region=-1 tier=-1 trap=-
-TRAP 23,25 N room=-1 region=-1 tier=-1 trap=MAGIC_WALL
+TRAP 17,25 N room=-1 region=-1 tier=-1 trap=ARROW_WALL

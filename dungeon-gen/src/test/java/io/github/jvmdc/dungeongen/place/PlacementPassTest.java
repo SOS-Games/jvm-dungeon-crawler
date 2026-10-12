@@ -53,7 +53,31 @@ class PlacementPassTest {
     }
 
     @Test
+    void seedsOneAndEightAreFurnished() {
+        for (long seed : new long[] {1L, 8L}) {
+            Dungeon dungeon = generator.generate(FULL, seed);
+            assertRules(dungeon, seed);
+        }
+    }
+
+    @Test
+    void densityMultiplierFillsMoreWithoutAddingLights() {
+        try {
+            PlacementBudget.density = 1;
+            Dungeon normal = generator.generate(FULL, 1L);
+            PlacementBudget.density = 2;
+            Dungeon packed = generator.generate(FULL, 1L);
+            assertTrue(countType(packed, PlacementType.DECOR) > countType(normal, PlacementType.DECOR));
+            assertTrue(countType(packed, PlacementType.LIGHT) <= countType(normal, PlacementType.LIGHT) + 4);
+            assertRules(packed, 1L);
+        } finally {
+            PlacementBudget.density = 1;
+        }
+    }
+
+    @Test
     void placementSnapshots() {
+        PlacementBudget.density = 1;
         SnapshotAssert.matches("golden/placement-seed-1.txt",
                 PlacementText.render(generator.generate(SMALL, 1L)));
         SnapshotAssert.matches("golden/placement-seed-11.txt",
@@ -69,7 +93,6 @@ class PlacementPassTest {
         assertTrue(exit >= 0, where);
         Set<Long> used = new HashSet<>();
         int traps = 0;
-        int spawns = 0;
         int bosses = 0;
         int shops = 0;
         int fountains = 0;
@@ -113,7 +136,6 @@ class PlacementPassTest {
             }
             if (placement.type == PlacementType.MONSTER_SPAWN || placement.type == PlacementType.ITEM_SPAWN
                     || placement.type == PlacementType.GOLD || placement.type == PlacementType.DECOR) {
-                spawns++;
                 assertTrue(placement.dangerTier >= 0 && placement.dangerTier <= 3, where);
                 if (placement.roomId >= 0) {
                     int hop = dungeon.graph.hops(start, placement.roomId);
@@ -150,11 +172,12 @@ class PlacementPassTest {
                 assertTrue(grid.inBounds(fx, fy) && grid.get(fx, fy).isOpen(), where);
             }
         }
-        assertTrue(traps >= PlacementPass.trapLo(dungeon.config) && traps <= PlacementPass.trapHi(dungeon.config),
-                where + " traps " + traps);
-        assertTrue(spawns >= PlacementPass.spawnLo(dungeon.config) && spawns <= PlacementPass.spawnHi(dungeon.config),
-                where + " spawns " + spawns);
-        assertTrue(bosses <= 1 && shops <= 1 && fountains <= 1, where);
+        PlacementBudget budget = PlacementBudget.load();
+        assertTrue(bosses <= 1 && shops <= budget.shopMax && fountains <= budget.fountainMax, where);
+        if (dungeon.grid.width >= 56) {
+            assertTrue(traps >= 1, where + " traps " + traps);
+        }
+        assertFurnished(dungeon, budget, where);
         for (Room room : dungeon.rooms) {
             assertTrue(monsters[room.id] <= PlacementPass.monsterCap(room), where + " monsters " + room.id);
             if ((room.secret || room.locked) && !entirelySafe(dungeon, room)) {
@@ -185,6 +208,210 @@ class PlacementPassTest {
         assertReachable(dungeon, where);
     }
 
+    private static void assertFurnished(Dungeon dungeon, PlacementBudget budget, String where) {
+        TileGrid grid = dungeon.grid;
+        int rooms = dungeon.rooms.size();
+        int[] decor = new int[rooms];
+        int[] other = new int[rooms];
+        int[] visible = new int[rooms];
+        int sinks = 0;
+        int altars = 0;
+        for (Placement placement : dungeon.placements) {
+            if (solidPiece(budget, placement) || placement.type == PlacementType.CHEST
+                    || placement.type == PlacementType.FOUNTAIN) {
+                assertTrue(!grid.get(placement.x, placement.y).isDoor(), where + " blocked door");
+                int index = grid.index(placement.x, placement.y);
+                assertTrue(index != dungeon.stairsUp && index != dungeon.stairsDown, where + " blocked stair");
+                assertTrue(!besideDoor(grid, placement.x, placement.y), where + " blocked doorway "
+                        + placement.x + "," + placement.y);
+            }
+            if (placement.tags.contains("sink")) {
+                sinks++;
+            }
+            if (placement.tags.contains("altar")) {
+                altars++;
+            }
+            if (placement.roomId < 0 || placement.roomId >= rooms || placement.type == PlacementType.LIGHT) {
+                continue;
+            }
+            visible[placement.roomId]++;
+            if (placement.type == PlacementType.DECOR) {
+                decor[placement.roomId]++;
+            }
+            if (placement.type == PlacementType.ITEM_SPAWN || placement.type == PlacementType.GOLD
+                    || placement.type == PlacementType.MONSTER_SPAWN || placement.type == PlacementType.CHEST
+                    || placement.type == PlacementType.SHOP || placement.type == PlacementType.BOSS_SPAWN) {
+                other[placement.roomId]++;
+            }
+        }
+        assertTrue(sinks <= budget.sinkMax, where + " sinks " + sinks);
+        assertTrue(altars <= budget.altarMax, where + " altars " + altars);
+        for (Room room : dungeon.rooms) {
+            int floor = floorTiles(dungeon, room);
+            if (floor <= 0) {
+                continue;
+            }
+            assertTrue(visible[room.id] >= 1, where + " empty room " + room.id);
+            if (floor >= 6) {
+                assertTrue(decor[room.id] >= budget.roomDecorMin,
+                        where + " decor room " + room.id + " " + decor[room.id]);
+                assertTrue(other[room.id] >= budget.roomOtherMin,
+                        where + " other room " + room.id + " " + other[room.id]);
+            }
+        }
+        int[] region = groundRegions(grid);
+        int regions = 0;
+        for (int id : region) {
+            regions = Math.max(regions, id + 1);
+        }
+        int[] area = new int[regions];
+        int[] features = new int[regions];
+        int[] groups = new int[regions];
+        boolean[] cluster = new boolean[regions];
+        for (int id : region) {
+            if (id >= 0) {
+                area[id]++;
+            }
+        }
+        for (Placement placement : dungeon.placements) {
+            int id = region[grid.index(placement.x, placement.y)];
+            if (id < 0 || placement.type == PlacementType.LIGHT) {
+                continue;
+            }
+            features[id]++;
+            if (placement.type == PlacementType.MONSTER_SPAWN) {
+                groups[id]++;
+            }
+            if (placement.tags.contains("cluster")) {
+                cluster[id] = true;
+            }
+        }
+        int halls = 0;
+        int corridors = 0;
+        for (int i = 0; i < region.length; i++) {
+            if (grid.get(i) == Tile.CORRIDOR_FLOOR) {
+                corridors++;
+            }
+        }
+        for (Placement placement : dungeon.placements) {
+            int index = grid.index(placement.x, placement.y);
+            if (grid.get(index) != Tile.CORRIDOR_FLOOR) {
+                continue;
+            }
+            if (placement.type == PlacementType.GOLD || placement.type == PlacementType.TRAP
+                    || placement.tags.contains("hall")) {
+                halls++;
+            }
+        }
+        if (corridors >= 20) {
+            assertTrue(halls >= 1, where + " empty halls");
+        }
+        for (int id = 0; id < regions; id++) {
+            if (area[id] < budget.courtTiles) {
+                continue;
+            }
+            int need = (int) Math.ceil(area[id] / budget.courtTiles);
+            assertTrue(cluster[id], where + " court " + id + " has no cluster");
+            assertTrue(features[id] >= need, where + " court " + id + " features " + features[id] + " need " + need);
+            if (groupRoom(dungeon, region, id) >= budget.courtGroupMin) {
+                assertTrue(groups[id] >= budget.courtGroupMin,
+                        where + " court " + id + " monsters " + groups[id]);
+            }
+        }
+    }
+
+    private static int groupRoom(Dungeon dungeon, int[] region, int id) {
+        TileGrid grid = dungeon.grid;
+        int open = 0;
+        for (int i = 0; i < region.length; i++) {
+            if (region[i] != id) {
+                continue;
+            }
+            int x = grid.x(i);
+            int y = grid.y(i);
+            if (besideDoor(grid, x, y) || nearStairs(grid, dungeon.stairsUp, x, y)) {
+                continue;
+            }
+            open++;
+        }
+        return open;
+    }
+
+    private static boolean solidPiece(PlacementBudget budget, Placement placement) {
+        if (placement.type != PlacementType.DECOR) {
+            return false;
+        }
+        for (String tag : placement.tags) {
+            if (budget.solid(tag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int floorTiles(Dungeon dungeon, Room room) {
+        int n = 0;
+        TileGrid grid = dungeon.grid;
+        for (int[] part : room.parts()) {
+            for (int y = part[1]; y < part[1] + part[3]; y++) {
+                for (int x = part[0]; x < part[0] + part[2]; x++) {
+                    if (room.contains(x, y) && grid.inBounds(x, y) && grid.get(x, y) == Tile.ROOM_FLOOR) {
+                        n++;
+                    }
+                }
+            }
+        }
+        return n;
+    }
+
+    private static int[] groundRegions(TileGrid grid) {
+        int[] region = new int[grid.width * grid.height];
+        java.util.Arrays.fill(region, -1);
+        boolean[] seen = new boolean[region.length];
+        int[] queue = new int[region.length];
+        int next = 0;
+        int[] dx = {0, 1, 0, -1};
+        int[] dy = {-1, 0, 1, 0};
+        for (int i = 0; i < region.length; i++) {
+            if (seen[i] || grid.get(i) != Tile.GROUND) {
+                continue;
+            }
+            int head = 0;
+            int tail = 0;
+            seen[i] = true;
+            queue[tail++] = i;
+            while (head < tail) {
+                int cell = queue[head++];
+                region[cell] = next;
+                for (int dir = 0; dir < 4; dir++) {
+                    int nx = grid.x(cell) + dx[dir];
+                    int ny = grid.y(cell) + dy[dir];
+                    if (!grid.inBounds(nx, ny)) {
+                        continue;
+                    }
+                    int n = grid.index(nx, ny);
+                    if (seen[n] || grid.get(n) != Tile.GROUND) {
+                        continue;
+                    }
+                    seen[n] = true;
+                    queue[tail++] = n;
+                }
+            }
+            next++;
+        }
+        return region;
+    }
+
+    private static int countType(Dungeon dungeon, PlacementType type) {
+        int n = 0;
+        for (Placement placement : dungeon.placements) {
+            if (placement.type == type) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     private static void assertLightsSpaced(Dungeon dungeon, String where) {
         for (int i = 0; i < dungeon.placements.size(); i++) {
             Placement a = dungeon.placements.get(i);
@@ -210,9 +437,10 @@ class PlacementPassTest {
     private static void assertReachable(Dungeon dungeon, String where) {
         TileGrid grid = dungeon.grid;
         boolean[] solid = new boolean[grid.width * grid.height];
+        PlacementBudget budget = PlacementBudget.load();
         for (Placement placement : dungeon.placements) {
-            if (placement.type == PlacementType.CHEST || placement.type == PlacementType.DECOR
-                    || placement.type == PlacementType.FOUNTAIN) {
+            if (placement.type == PlacementType.CHEST || placement.type == PlacementType.FOUNTAIN
+                    || (placement.type == PlacementType.DECOR && solidPiece(budget, placement))) {
                 solid[grid.index(placement.x, placement.y)] = true;
             }
         }

@@ -17,10 +17,12 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Marks traps, chests, spawns, lights, and a few room roles on a finished layout.
+ * Fills a finished layout with traps, chests, themed decor, and a few specials.
+ * Counts come from placement.json, scaled by floor area. The debug density
+ * multiplier fattens those counts and leaves the light cap alone.
  * Uses its own random stream, mixed from the floor seed, so the rooms stay put.
- * Floor traps become plates. Chests, decor, and fountains are treated as solid
- * and are skipped when they would cut a room off from the stairs.
+ * Solid pieces stay off doorways, stairs, and a path between doors, and are
+ * skipped when they would cut a room off from the stairs.
  */
 public final class PlacementPass {
     private static final int[] DX = {0, 1, 0, -1};
@@ -38,10 +40,14 @@ public final class PlacementPass {
         assignRoles(ctx);
         placeChests(ctx);
         placeTraps(ctx);
-        placeFountain(ctx);
-        placeSpawns(ctx);
-        placeLights(ctx);
+        placeFountains(ctx);
+        placeSinks(ctx);
         placeMarkers(ctx);
+        placeRooms(ctx);
+        placeCourts(ctx);
+        placeHalls(ctx);
+        placePool(ctx);
+        placeLights(ctx);
         dungeon.placements.sort((a, b) -> {
             if (a.y != b.y) {
                 return Integer.compare(a.y, b.y);
@@ -132,7 +138,8 @@ public final class PlacementPass {
         for (int i = 0; i < extras && i < dead.size(); i++) {
             ctx.roles.treasure[dead.get(i)] = true;
         }
-        if (ctx.roles.exit >= 0 && ctx.rng.nextDouble() < dungeon.config.bossChance) {
+        int every = ctx.budget.bossEveryFloors;
+        if (ctx.roles.exit >= 0 && every > 0 && Math.floorMod(dungeon.seed, (long) every) == 0) {
             int best = -1;
             int bestArea = -1;
             for (Room room : dungeon.rooms) {
@@ -151,7 +158,7 @@ public final class PlacementPass {
             }
             ctx.roles.boss = best;
         }
-        if (ctx.rng.nextDouble() < dungeon.config.shopChance) {
+        if (roll(ctx, ctx.budget.shopMin, ctx.budget.shopMax) > 0) {
             List<Integer> medium = new ArrayList<>();
             for (int id : dead) {
                 if (ctx.roles.treasure[id] || id == ctx.roles.boss) {
@@ -173,10 +180,36 @@ public final class PlacementPass {
                 ctx.roles.shop = pool.get(ctx.rng.nextInt(pool.size()));
             }
         }
+        assignThemes(ctx);
+    }
+
+    /** One theme per room. A shrine is the rolled altar, treasure rooms keep their role. */
+    private static void assignThemes(Context ctx) {
+        List<Integer> candidates = new ArrayList<>();
+        for (Room room : ctx.dungeon.rooms) {
+            if (room.id == ctx.roles.start || room.id == ctx.roles.shop || ctx.roles.treasure[room.id]) {
+                continue;
+            }
+            candidates.add(room.id);
+        }
+        if (roll(ctx, ctx.budget.altarMin, ctx.budget.altarMax) > 0 && !candidates.isEmpty()) {
+            ctx.altarRoom = candidates.get(ctx.rng.nextInt(candidates.size()));
+        }
+        String[] ordinary = {"storage", "barracks", "library", "crypt"};
+        for (Room room : ctx.dungeon.rooms) {
+            if (ctx.roles.treasure[room.id]) {
+                ctx.themes[room.id] = "treasure";
+            } else if (room.id == ctx.altarRoom) {
+                ctx.themes[room.id] = "shrine";
+            } else {
+                ctx.themes[room.id] = ordinary[ctx.rng.nextInt(ordinary.length)];
+            }
+        }
     }
 
     private static void placeTraps(Context ctx) {
-        int want = ctx.rng.nextInt(trapLo(ctx.dungeon.config), trapHi(ctx.dungeon.config) + 1);
+        int floor = countTile(ctx, Tile.ROOM_FLOOR) + countTile(ctx, Tile.CORRIDOR_FLOOR);
+        int want = ctx.budget.scaled(floor, ctx.budget.traps);
         boolean[] approach = approaches(ctx);
         List<Integer> cells = new ArrayList<>();
         TileGrid grid = ctx.dungeon.grid;
@@ -230,7 +263,7 @@ public final class PlacementPass {
             boolean treasure = ctx.roles.treasure[room.id];
             boolean boss = room.id == ctx.roles.boss;
             if (!treasure && !boss && (room.id == ctx.roles.start || room.id == ctx.roles.shop
-                    || ctx.rng.nextDouble() >= ctx.dungeon.config.chestChance)) {
+                    || ctx.rng.nextDouble() >= ctx.budget.chestChance)) {
                 continue;
             }
             List<String> tags = new ArrayList<>();
@@ -259,19 +292,28 @@ public final class PlacementPass {
         }
     }
 
-    private static void placeFountain(Context ctx) {
-        if (ctx.rng.nextDouble() >= ctx.dungeon.config.fountainChance) {
+    private static void placeFountains(Context ctx) {
+        int want = roll(ctx, ctx.budget.fountainMin, ctx.budget.fountainMax);
+        if (want <= 0) {
             return;
         }
         TileGrid grid = ctx.dungeon.grid;
         List<Integer> cells = new ArrayList<>();
         for (int i = 0; i < ctx.regionOf.length; i++) {
-            if (ctx.regionOf[i] >= 0 && grid.get(i) == Tile.GROUND && !ctx.taken[i] && !safe(ctx, i)) {
+            if (ctx.regionOf[i] >= 0 && grid.get(i) == Tile.GROUND && !ctx.taken[i] && !safe(ctx, i)
+                    && !ctx.reserved[i] && !ctx.path[i]) {
                 cells.add(i);
             }
         }
         shuffle(cells, ctx.rng);
+        int placed = 0;
         for (int cell : cells) {
+            if (placed >= want) {
+                break;
+            }
+            if (ctx.taken[cell] || nearPlaced(ctx, cell, PlacementType.FOUNTAIN, ctx.budget.fountainGap)) {
+                continue;
+            }
             if (!keepsReach(ctx, cell)) {
                 continue;
             }
@@ -279,49 +321,6 @@ public final class PlacementPass {
             ctx.taken[cell] = true;
             add(ctx, PlacementType.FOUNTAIN, grid.x(cell), grid.y(cell), Facing.NONE,
                     -1, ctx.regionOf[cell], -1, null, List.of());
-            return;
-        }
-    }
-
-    private static void placeSpawns(Context ctx) {
-        int want = ctx.rng.nextInt(spawnLo(ctx.dungeon.config), spawnHi(ctx.dungeon.config) + 1);
-        TileGrid grid = ctx.dungeon.grid;
-        List<Integer> cells = new ArrayList<>();
-        for (int i = 0; i < ctx.taken.length; i++) {
-            if (spawnSite(ctx, i)) {
-                cells.add(i);
-            }
-        }
-        int[] monsters = new int[ctx.dungeon.rooms.size()];
-        int placed = 0;
-        while (placed < want && !cells.isEmpty()) {
-            int pick = weighted(ctx, cells);
-            int cell = cells.remove(pick);
-            if (!spawnSite(ctx, cell)) {
-                continue;
-            }
-            int room = ctx.roomOf[cell];
-            int tier = tierAt(ctx, cell);
-            boolean allowMonster = !nearStairs(ctx, cell);
-            PlacementType type = spawnType(ctx, room, monsters, tier, allowMonster);
-            if (type == null) {
-                continue;
-            }
-            if (type == PlacementType.DECOR && !keepsReach(ctx, cell)) {
-                type = nonSolid(ctx, room, monsters, allowMonster);
-                if (type == null) {
-                    continue;
-                }
-            }
-            if (type == PlacementType.DECOR) {
-                ctx.solid[cell] = true;
-            }
-            if (type == PlacementType.MONSTER_SPAWN && room >= 0) {
-                monsters[room]++;
-            }
-            ctx.taken[cell] = true;
-            add(ctx, type, grid.x(cell), grid.y(cell), Facing.NONE, room, room < 0 ? ctx.regionOf[cell] : -1,
-                    tier, null, List.of());
             placed++;
         }
     }
@@ -334,7 +333,8 @@ public final class PlacementPass {
             List<Integer> walls = new ArrayList<>();
             List<Facing> faces = new ArrayList<>();
             collectWalls(ctx, room, walls, faces);
-            spaceLights(ctx, walls, faces, 5 + ctx.rng.nextInt(4), room.id, -1);
+            int cap = Math.max(1, walls.size() / Math.max(1, ctx.budget.lightWallTiles));
+            spaceLights(ctx, walls, faces, ctx.budget.lightMinGap, cap, room.id, -1);
         }
         int regions = 0;
         for (int id : ctx.regionOf) {
@@ -345,7 +345,8 @@ public final class PlacementPass {
             List<Facing> faces = new ArrayList<>();
             collectCourtWalls(ctx, region, walls, faces);
             if (!walls.isEmpty()) {
-                spaceLights(ctx, walls, faces, 5 + ctx.rng.nextInt(4), -1, region);
+                int cap = Math.max(1, walls.size() / Math.max(1, ctx.budget.lightWallTiles));
+                spaceLights(ctx, walls, faces, ctx.budget.lightMinGap, cap, -1, region);
             }
         }
     }
@@ -372,11 +373,14 @@ public final class PlacementPass {
         }
     }
 
-    private static void spaceLights(Context ctx, List<Integer> walls, List<Facing> faces, int gap,
+    private static void spaceLights(Context ctx, List<Integer> walls, List<Facing> faces, int gap, int maxCount,
             int roomId, int regionId) {
         List<Integer> placed = new ArrayList<>();
         TileGrid grid = ctx.dungeon.grid;
         for (int i = 0; i < walls.size(); i++) {
+            if (placed.size() >= maxCount) {
+                break;
+            }
             int cell = walls.get(i);
             if (ctx.taken[cell]) {
                 continue;
@@ -553,23 +557,11 @@ public final class PlacementPass {
 
     private static boolean chestSite(Context ctx, int index) {
         TileGrid grid = ctx.dungeon.grid;
-        if (ctx.taken[index] || safe(ctx, index)) {
+        if (ctx.taken[index] || safe(ctx, index) || ctx.reserved[index] || ctx.path[index]) {
             return false;
         }
         Tile tile = grid.get(index);
         return tile == Tile.ROOM_FLOOR;
-    }
-
-    private static boolean spawnSite(Context ctx, int index) {
-        if (ctx.taken[index] || index == ctx.dungeon.stairsUp || index == ctx.dungeon.stairsDown) {
-            return false;
-        }
-        Tile tile = ctx.dungeon.grid.get(index);
-        if (tile != Tile.ROOM_FLOOR && tile != Tile.CORRIDOR_FLOOR && tile != Tile.GROUND) {
-            return false;
-        }
-        int room = ctx.roomOf[index];
-        return room != ctx.roles.start;
     }
 
     /** True when a monster, trap, or chest must stay off this cell. */
@@ -667,56 +659,604 @@ public final class PlacementPass {
         return -1;
     }
 
-    private static PlacementType spawnType(Context ctx, int room, int[] monsters, int tier, boolean allowMonster) {
-        int monster = allowMonster ? 3 * (5 + tier * 3) : 0;
-        int item = 4;
-        int gold = 3;
-        int decor = 3;
-        if (room >= 0 && (room == ctx.roles.shop || room == ctx.roles.boss
-                || monsters[room] >= monsterCap(ctx.dungeon.rooms.get(room)))) {
-            monster = 0;
+    private static void placeSinks(Context ctx) {
+        int want = roll(ctx, ctx.budget.sinkMin, ctx.budget.sinkMax);
+        if (want <= 0) {
+            return;
         }
-        if (room < 0 && allowMonster) {
-            monster = Math.max(monster, 4);
+        List<Integer> cells = new ArrayList<>();
+        for (Room room : ctx.dungeon.rooms) {
+            if (floorCount(ctx, room) < ctx.budget.sinkRoomTiles) {
+                continue;
+            }
+            cells.addAll(roomSites(ctx, room, true));
         }
-        int total = monster + item + gold + decor;
-        int roll = ctx.rng.nextInt(total);
-        if (roll < monster) {
-            return PlacementType.MONSTER_SPAWN;
-        }
-        roll -= monster;
-        if (roll < item) {
-            return PlacementType.ITEM_SPAWN;
-        }
-        roll -= item;
-        if (roll < gold) {
-            return PlacementType.GOLD;
-        }
-        return PlacementType.DECOR;
-    }
-
-    private static PlacementType nonSolid(Context ctx, int room, int[] monsters, boolean allowMonster) {
-        if (allowMonster && room >= 0 && room != ctx.roles.shop && room != ctx.roles.boss
-                && monsters[room] < monsterCap(ctx.dungeon.rooms.get(room))) {
-            return PlacementType.MONSTER_SPAWN;
-        }
-        return ctx.rng.nextInt(2) == 0 ? PlacementType.ITEM_SPAWN : PlacementType.GOLD;
-    }
-
-    private static int weighted(Context ctx, List<Integer> cells) {
-        int total = 0;
+        shuffle(cells, ctx.rng);
+        int placed = 0;
         for (int cell : cells) {
-            total += 1 + tierAt(ctx, cell) * tierAt(ctx, cell);
+            if (placed >= want) {
+                break;
+            }
+            if (!decorSite(ctx, cell, true) || nearPlaced(ctx, cell, PlacementType.DECOR, ctx.budget.sinkGap)) {
+                continue;
+            }
+            if (!keepsReach(ctx, cell)) {
+                continue;
+            }
+            ctx.solid[cell] = true;
+            commitDecor(ctx, cell, ctx.roomOf[cell], -1, List.of("sink"));
+            placed++;
         }
-        int roll = ctx.rng.nextInt(Math.max(1, total));
-        int cursor = 0;
-        for (int i = 0; i < cells.size(); i++) {
-            cursor += 1 + tierAt(ctx, cells.get(i)) * tierAt(ctx, cells.get(i));
-            if (roll < cursor) {
-                return i;
+    }
+
+    private static void placeRooms(Context ctx) {
+        for (Room room : ctx.dungeon.rooms) {
+            int area = floorCount(ctx, room);
+            if (area <= 0) {
+                continue;
+            }
+            int decorN = Math.max(ctx.budget.roomDecorMin, ctx.budget.scaled(area, ctx.budget.decor));
+            int monsterN = ctx.budget.scaled(area, ctx.budget.monsters);
+            int lootN = ctx.budget.scaled(area, ctx.budget.items);
+            if (room.id == ctx.roles.start || room.id == ctx.roles.shop) {
+                monsterN = 0;
+            }
+            monsterN = Math.min(monsterN, monsterCap(room));
+            if (monsterN + lootN < ctx.budget.roomOtherMin) {
+                lootN += ctx.budget.roomOtherMin - monsterN;
+            }
+            String theme = ctx.themes[room.id] == null ? "storage" : ctx.themes[room.id];
+            placeThemed(ctx, room, theme, decorN);
+            placeMonsters(ctx, room, monsterN);
+            placeLoot(ctx, room, lootN);
+        }
+    }
+
+    private static void placeThemed(Context ctx, Room room, String theme, int count) {
+        List<String> pieces = ctx.budget.themes.get(theme);
+        if (pieces == null || pieces.isEmpty()) {
+            pieces = List.of("rubble");
+        }
+        List<Integer> sites = roomSites(ctx, room, false);
+        preferCorners(ctx, sites);
+        int placed = 0;
+        if ("shrine".equals(theme)) {
+            placed += placePiece(ctx, sites, room.id, -1, theme, "altar");
+        }
+        int guard = 0;
+        while (placed < count && guard < sites.size()) {
+            int cell = sites.get(guard++);
+            String piece = pieces.get(ctx.rng.nextInt(pieces.size()));
+            int added = placePiece(ctx, List.of(cell), room.id, -1, theme, piece);
+            if (added == 0) {
+                added = placePiece(ctx, List.of(cell), room.id, -1, theme, "rubble");
+            }
+            placed += added;
+        }
+    }
+
+    private static void placeMonsters(Context ctx, Room room, int count) {
+        List<Integer> sites = roomSites(ctx, room, false);
+        shuffle(sites, ctx.rng);
+        int placed = 0;
+        for (int cell : sites) {
+            if (placed >= count) {
+                break;
+            }
+            if (ctx.taken[cell] || safe(ctx, cell) || besideDoor(ctx.dungeon.grid, ctx.dungeon.grid.x(cell), ctx.dungeon.grid.y(cell))) {
+                continue;
+            }
+            commit(ctx, PlacementType.MONSTER_SPAWN, cell, room.id, -1, tierOf(ctx, room.id, cell), List.of());
+            placed++;
+        }
+    }
+
+    private static void placeLoot(Context ctx, Room room, int count) {
+        List<Integer> sites = roomSites(ctx, room, false);
+        shuffle(sites, ctx.rng);
+        int placed = 0;
+        for (int cell : sites) {
+            if (placed >= count) {
+                break;
+            }
+            if (ctx.taken[cell]) {
+                continue;
+            }
+            PlacementType type = ctx.rng.nextInt(2) == 0 ? PlacementType.ITEM_SPAWN : PlacementType.GOLD;
+            commit(ctx, type, cell, room.id, -1, tierOf(ctx, room.id, cell), List.of());
+            placed++;
+        }
+    }
+
+    private static void placeCourts(Context ctx) {
+        int regions = 0;
+        for (int id : ctx.regionOf) {
+            regions = Math.max(regions, id + 1);
+        }
+        for (int region = 0; region < regions; region++) {
+            List<Integer> open = new ArrayList<>();
+            int area = 0;
+            TileGrid grid = ctx.dungeon.grid;
+            for (int i = 0; i < ctx.regionOf.length; i++) {
+                if (ctx.regionOf[i] != region || grid.get(i) != Tile.GROUND) {
+                    continue;
+                }
+                area++;
+                if (!ctx.taken[i]) {
+                    open.add(i);
+                }
+            }
+            if (area <= 0 || open.isEmpty()) {
+                continue;
+            }
+            double span = Math.max(1.0, ctx.budget.courtTiles);
+            int need = (int) Math.ceil(area * ctx.budget.factor() / span);
+            need = Math.max(1, need);
+            placeCluster(ctx, region, open);
+            int items = Math.max(1, ctx.budget.scaled(area, ctx.budget.items));
+            placeScattered(ctx, region, items);
+            int group = roll(ctx, ctx.budget.courtGroupMin, ctx.budget.courtGroupMax);
+            placeGroup(ctx, region, group);
+            int guard = 0;
+            while (features(ctx, region) < need && guard < 8) {
+                guard++;
+                if (placeScattered(ctx, region, 1) == 0 && placeCluster(ctx, region, groundOpen(ctx, region)) == 0) {
+                    break;
+                }
             }
         }
-        return cells.size() - 1;
+    }
+
+    private static int placeCluster(Context ctx, int region, List<Integer> open) {
+        List<Integer> free = new ArrayList<>();
+        for (int cell : open) {
+            if (!ctx.taken[cell] && ctx.dungeon.grid.get(cell) == Tile.GROUND) {
+                free.add(cell);
+            }
+        }
+        if (free.isEmpty()) {
+            return 0;
+        }
+        int center = densest(ctx, free);
+        List<Integer> around = new ArrayList<>();
+        TileGrid grid = ctx.dungeon.grid;
+        int cx = grid.x(center);
+        int cy = grid.y(center);
+        for (int cell : free) {
+            int dist = Math.max(Math.abs(grid.x(cell) - cx), Math.abs(grid.y(cell) - cy));
+            if (dist <= ctx.budget.clusterRadius) {
+                around.add(cell);
+            }
+        }
+        if (around.isEmpty()) {
+            around.add(center);
+        }
+        preferCorners(ctx, around);
+        int want = roll(ctx, ctx.budget.courtClusterMin, ctx.budget.courtClusterMax);
+        List<String> pieces = ctx.budget.courtPieces.isEmpty()
+                ? List.of("rubble", "bones", "pillar", "stalagmite")
+                : ctx.budget.courtPieces;
+        int placed = 0;
+        for (int i = 0; i < around.size() && placed < want; i++) {
+            String piece = pieces.get(i % pieces.size());
+            int cell = around.get(i);
+            if (placePiece(ctx, List.of(cell), -1, region, "cluster", piece) == 0) {
+                placePiece(ctx, List.of(cell), -1, region, "cluster", "rubble");
+            }
+            if (ctx.taken[cell]) {
+                placed++;
+            }
+        }
+        return placed;
+    }
+
+    private static int placeGroup(Context ctx, int region, int count) {
+        List<Integer> sites = groundOpen(ctx, region);
+        shuffle(sites, ctx.rng);
+        int placed = 0;
+        TileGrid grid = ctx.dungeon.grid;
+        for (int cell : sites) {
+            if (placed >= count) {
+                break;
+            }
+            if (ctx.taken[cell] || safe(ctx, cell) || besideDoor(grid, grid.x(cell), grid.y(cell))) {
+                continue;
+            }
+            commit(ctx, PlacementType.MONSTER_SPAWN, cell, -1, region, tierAt(ctx, cell), List.of("group"));
+            placed++;
+        }
+        return placed;
+    }
+
+    private static int placeScattered(Context ctx, int region, int count) {
+        List<Integer> sites = groundOpen(ctx, region);
+        shuffle(sites, ctx.rng);
+        int placed = 0;
+        for (int cell : sites) {
+            if (placed >= count) {
+                break;
+            }
+            if (ctx.taken[cell]) {
+                continue;
+            }
+            PlacementType type = ctx.rng.nextInt(2) == 0 ? PlacementType.ITEM_SPAWN : PlacementType.GOLD;
+            commit(ctx, type, cell, -1, region, tierAt(ctx, cell), List.of("scattered"));
+            placed++;
+        }
+        return placed;
+    }
+
+    private static void placeHalls(Context ctx) {
+        int tiles = countTile(ctx, Tile.CORRIDOR_FLOOR);
+        int marks = ctx.budget.scaled(tiles, ctx.budget.halls);
+        if (marks <= 0) {
+            return;
+        }
+        TileGrid grid = ctx.dungeon.grid;
+        List<Integer> sites = new ArrayList<>();
+        for (int i = 0; i < ctx.taken.length; i++) {
+            if (ctx.taken[i] || grid.get(i) != Tile.CORRIDOR_FLOOR) {
+                continue;
+            }
+            if (i == ctx.dungeon.stairsUp || i == ctx.dungeon.stairsDown) {
+                continue;
+            }
+            if (besideDoor(grid, grid.x(i), grid.y(i))) {
+                continue;
+            }
+            sites.add(i);
+        }
+        shuffle(sites, ctx.rng);
+        int placed = 0;
+        for (int cell : sites) {
+            if (placed >= marks) {
+                break;
+            }
+            if (ctx.taken[cell]) {
+                continue;
+            }
+            int roll = ctx.rng.nextInt(3);
+            if (roll == 0) {
+                commit(ctx, PlacementType.GOLD, cell, -1, -1, tierAt(ctx, cell), List.of("hall"));
+            } else {
+                String piece = roll == 1 ? "bones" : "web";
+                commitDecor(ctx, cell, -1, -1, List.of("hall", piece));
+            }
+            placed++;
+        }
+    }
+
+    private static void placePool(Context ctx) {
+        if (ctx.rng.nextDouble() >= ctx.budget.poolChance) {
+            return;
+        }
+        int origin = findPool(ctx, Tile.GROUND);
+        if (origin < 0) {
+            origin = findPool(ctx, Tile.ROOM_FLOOR);
+        }
+        if (origin < 0) {
+            return;
+        }
+        TileGrid grid = ctx.dungeon.grid;
+        int x = grid.x(origin);
+        int y = grid.y(origin);
+        int[] cells = {
+                origin,
+                grid.index(x + 1, y),
+                grid.index(x, y + 1),
+                grid.index(x + 1, y + 1)
+        };
+        boolean lava = ctx.rng.nextDouble() < ctx.budget.lavaChance;
+        for (int cell : cells) {
+            grid.set(cell, lava ? Tile.LAVA : Tile.WATER);
+        }
+        if (lava && !mapStillConnected(ctx)) {
+            for (int cell : cells) {
+                grid.set(cell, Tile.WATER);
+            }
+        }
+        for (int cell : cells) {
+            ctx.taken[cell] = true;
+        }
+    }
+
+    private static int findPool(Context ctx, Tile want) {
+        TileGrid grid = ctx.dungeon.grid;
+        List<Integer> spots = new ArrayList<>();
+        for (int y = 0; y < grid.height - 1; y++) {
+            for (int x = 0; x < grid.width - 1; x++) {
+                if (poolOk(ctx, x, y, want) && poolOk(ctx, x + 1, y, want)
+                        && poolOk(ctx, x, y + 1, want) && poolOk(ctx, x + 1, y + 1, want)
+                        && !splitsCourt(ctx, x, y)) {
+                    spots.add(grid.index(x, y));
+                }
+            }
+        }
+        if (spots.isEmpty()) {
+            return -1;
+        }
+        return spots.get(ctx.rng.nextInt(spots.size()));
+    }
+
+    /** A pool that cuts a courtyard in two would leave one side without its cluster. */
+    private static boolean splitsCourt(Context ctx, int x, int y) {
+        TileGrid grid = ctx.dungeon.grid;
+        int origin = grid.index(x, y);
+        int region = ctx.regionOf[origin];
+        if (region < 0) {
+            return false;
+        }
+        boolean[] blocked = new boolean[ctx.regionOf.length];
+        blocked[origin] = true;
+        blocked[grid.index(x + 1, y)] = true;
+        blocked[grid.index(x, y + 1)] = true;
+        blocked[grid.index(x + 1, y + 1)] = true;
+        boolean[] seen = new boolean[blocked.length];
+        int parts = 0;
+        for (int i = 0; i < blocked.length; i++) {
+            if (seen[i] || blocked[i] || ctx.regionOf[i] != region || grid.get(i) != Tile.GROUND) {
+                continue;
+            }
+            parts++;
+            if (parts > 1) {
+                return true;
+            }
+            int head = 0;
+            int tail = 0;
+            seen[i] = true;
+            ctx.queue[tail++] = i;
+            while (head < tail) {
+                int cell = ctx.queue[head++];
+                int cx = grid.x(cell);
+                int cy = grid.y(cell);
+                for (int dir = 0; dir < 4; dir++) {
+                    int nx = cx + DX[dir];
+                    int ny = cy + DY[dir];
+                    if (!grid.inBounds(nx, ny)) {
+                        continue;
+                    }
+                    int next = grid.index(nx, ny);
+                    if (seen[next] || blocked[next] || ctx.regionOf[next] != region || grid.get(next) != Tile.GROUND) {
+                        continue;
+                    }
+                    seen[next] = true;
+                    ctx.queue[tail++] = next;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean poolOk(Context ctx, int x, int y, Tile want) {
+        TileGrid grid = ctx.dungeon.grid;
+        int index = grid.index(x, y);
+        if (grid.get(index) != want || ctx.taken[index] || ctx.reserved[index] || ctx.path[index]) {
+            return false;
+        }
+        return !safe(ctx, index);
+    }
+
+    private static boolean mapStillConnected(Context ctx) {
+        flood(ctx);
+        if (ctx.dungeon.stairsUp >= 0 && ctx.baseReached[ctx.dungeon.stairsUp] && !ctx.seen[ctx.dungeon.stairsUp]) {
+            return false;
+        }
+        if (ctx.dungeon.stairsDown >= 0 && ctx.baseReached[ctx.dungeon.stairsDown] && !ctx.seen[ctx.dungeon.stairsDown]) {
+            return false;
+        }
+        for (Room room : ctx.dungeon.rooms) {
+            if (room.secret || !ctx.roomReached[room.id]) {
+                continue;
+            }
+            if (!roomReachedNow(ctx, room)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int placePiece(Context ctx, List<Integer> sites, int roomId, int regionId, String theme, String piece) {
+        boolean solid = ctx.budget.solid(piece);
+        for (int cell : sites) {
+            if (!decorSite(ctx, cell, solid)) {
+                continue;
+            }
+            if (solid && !keepsReach(ctx, cell)) {
+                continue;
+            }
+            List<String> tags = new ArrayList<>();
+            tags.add(theme);
+            if (!theme.equals(piece)) {
+                tags.add(piece);
+            }
+            commitDecor(ctx, cell, roomId, regionId, tags);
+            if (solid) {
+                ctx.solid[cell] = true;
+            }
+            return 1;
+        }
+        return 0;
+    }
+
+    private static void commitDecor(Context ctx, int cell, int roomId, int regionId, List<String> tags) {
+        commit(ctx, PlacementType.DECOR, cell, roomId, regionId, tierOf(ctx, roomId, cell), tags);
+    }
+
+    private static void commit(Context ctx, PlacementType type, int cell, int roomId, int regionId, int tier,
+            List<String> tags) {
+        TileGrid grid = ctx.dungeon.grid;
+        ctx.taken[cell] = true;
+        int region = regionId >= 0 ? regionId : (roomId < 0 ? ctx.regionOf[cell] : -1);
+        add(ctx, type, grid.x(cell), grid.y(cell), Facing.NONE, roomId, region, tier, null, tags);
+    }
+
+    private static int tierOf(Context ctx, int roomId, int cell) {
+        if (roomId >= 0 && roomId < ctx.hops.length) {
+            return dangerTier(ctx.hops[roomId], ctx.maxHop);
+        }
+        return tierAt(ctx, cell);
+    }
+
+    private static boolean decorSite(Context ctx, int cell, boolean solid) {
+        if (ctx.taken[cell] || cell == ctx.dungeon.stairsUp || cell == ctx.dungeon.stairsDown) {
+            return false;
+        }
+        Tile tile = ctx.dungeon.grid.get(cell);
+        if (tile != Tile.ROOM_FLOOR && tile != Tile.GROUND && tile != Tile.CORRIDOR_FLOOR) {
+            return false;
+        }
+        if (!solid) {
+            return true;
+        }
+        return !ctx.reserved[cell] && !ctx.path[cell];
+    }
+
+    private static List<Integer> roomSites(Context ctx, Room room, boolean against) {
+        TileGrid grid = ctx.dungeon.grid;
+        List<Integer> sites = new ArrayList<>();
+        for (int[] part : room.parts()) {
+            for (int y = part[1]; y < part[1] + part[3]; y++) {
+                for (int x = part[0]; x < part[0] + part[2]; x++) {
+                    if (!room.contains(x, y) || !grid.inBounds(x, y)) {
+                        continue;
+                    }
+                    int index = grid.index(x, y);
+                    if (ctx.taken[index] || grid.get(index) != Tile.ROOM_FLOOR) {
+                        continue;
+                    }
+                    if (index == ctx.dungeon.stairsUp || index == ctx.dungeon.stairsDown) {
+                        continue;
+                    }
+                    if (against && !againstWall(grid, x, y)) {
+                        continue;
+                    }
+                    sites.add(index);
+                }
+            }
+        }
+        return sites;
+    }
+
+    private static void preferCorners(Context ctx, List<Integer> sites) {
+        shuffle(sites, ctx.rng);
+        sites.sort((a, b) -> Integer.compare(corner(ctx, b), corner(ctx, a)));
+    }
+
+    private static int corner(Context ctx, int cell) {
+        TileGrid grid = ctx.dungeon.grid;
+        int x = grid.x(cell);
+        int y = grid.y(cell);
+        int walls = 0;
+        for (int dir = 0; dir < 4; dir++) {
+            int nx = x + DX[dir];
+            int ny = y + DY[dir];
+            if (!grid.inBounds(nx, ny)) {
+                continue;
+            }
+            Tile tile = grid.get(nx, ny);
+            if (tile == Tile.WALL || tile == Tile.ROCK) {
+                walls++;
+            }
+        }
+        if (besideDoor(grid, x, y)) {
+            walls -= 3;
+        }
+        return walls;
+    }
+
+    private static int densest(Context ctx, List<Integer> cells) {
+        TileGrid grid = ctx.dungeon.grid;
+        int best = cells.get(0);
+        int bestScore = -1;
+        for (int cell : cells) {
+            int x = grid.x(cell);
+            int y = grid.y(cell);
+            int score = 0;
+            for (int other : cells) {
+                int dist = Math.max(Math.abs(grid.x(other) - x), Math.abs(grid.y(other) - y));
+                if (dist <= ctx.budget.clusterRadius && !besideDoor(grid, grid.x(other), grid.y(other))) {
+                    score++;
+                }
+            }
+            if (score > bestScore) {
+                bestScore = score;
+                best = cell;
+            }
+        }
+        return best;
+    }
+
+    private static List<Integer> groundOpen(Context ctx, int region) {
+        List<Integer> open = new ArrayList<>();
+        TileGrid grid = ctx.dungeon.grid;
+        for (int i = 0; i < ctx.regionOf.length; i++) {
+            if (ctx.regionOf[i] == region && grid.get(i) == Tile.GROUND && !ctx.taken[i]) {
+                open.add(i);
+            }
+        }
+        return open;
+    }
+
+    private static int features(Context ctx, int region) {
+        int n = 0;
+        for (Placement placement : ctx.dungeon.placements) {
+            if (placement.regionId == region && placement.type != PlacementType.LIGHT) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static boolean nearPlaced(Context ctx, int cell, PlacementType type, int gap) {
+        TileGrid grid = ctx.dungeon.grid;
+        int x = grid.x(cell);
+        int y = grid.y(cell);
+        for (Placement placement : ctx.dungeon.placements) {
+            if (placement.type != type) {
+                continue;
+            }
+            int dist = Math.max(Math.abs(placement.x - x), Math.abs(placement.y - y));
+            if (dist < gap) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int countTile(Context ctx, Tile tile) {
+        int n = 0;
+        TileGrid grid = ctx.dungeon.grid;
+        for (int i = 0; i < ctx.taken.length; i++) {
+            if (grid.get(i) == tile) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static int floorCount(Context ctx, Room room) {
+        int n = 0;
+        TileGrid grid = ctx.dungeon.grid;
+        for (int[] part : room.parts()) {
+            for (int y = part[1]; y < part[1] + part[3]; y++) {
+                for (int x = part[0]; x < part[0] + part[2]; x++) {
+                    if (room.contains(x, y) && grid.inBounds(x, y) && grid.get(x, y) == Tile.ROOM_FLOOR) {
+                        n++;
+                    }
+                }
+            }
+        }
+        return n;
+    }
+
+    private static int roll(Context ctx, int min, int max) {
+        if (max < min) {
+            max = min;
+        }
+        if (min == max) {
+            return min;
+        }
+        return ctx.rng.nextInt(min, max + 1);
     }
 
     private static int tierAt(Context ctx, int index) {
@@ -930,6 +1470,10 @@ public final class PlacementPass {
         final boolean[] roomReached;
         final int[] queue;
         final Roles roles;
+        final PlacementBudget budget;
+        final boolean[] reserved;
+        final String[] themes;
+        int altarRoom = -1;
         int maxHop;
 
         Context(Dungeon dungeon, SeededRandom rng) {
@@ -966,12 +1510,93 @@ public final class PlacementPass {
             seen = new boolean[area];
             queue = new int[area];
             roles = new Roles(dungeon.rooms.size());
+            budget = PlacementBudget.load();
+            reserved = new boolean[area];
+            themes = new String[dungeon.rooms.size()];
             roomReached = new boolean[dungeon.rooms.size()];
             flood(this);
             baseReached = seen.clone();
             for (Room room : dungeon.rooms) {
                 roomReached[room.id] = roomReachedNow(this, room);
             }
+            reservePassages(this);
+        }
+    }
+
+    /** Doors, stairs, the tile beside each door, and a one-tile path between doors. */
+    private static void reservePassages(Context ctx) {
+        TileGrid grid = ctx.dungeon.grid;
+        int area = ctx.reserved.length;
+        for (int i = 0; i < area; i++) {
+            Tile tile = grid.get(i);
+            if (tile.isDoor() || i == ctx.dungeon.stairsUp || i == ctx.dungeon.stairsDown) {
+                ctx.reserved[i] = true;
+                ctx.taken[i] = true;
+            }
+        }
+        for (int i = 0; i < area; i++) {
+            if (ctx.reserved[i] || !standable(grid.get(i))) {
+                continue;
+            }
+            if (besideDoor(grid, grid.x(i), grid.y(i))) {
+                ctx.reserved[i] = true;
+            }
+        }
+        for (Room room : ctx.dungeon.rooms) {
+            List<Integer> mouths = new ArrayList<>();
+            for (int[] part : room.parts()) {
+                for (int y = part[1]; y < part[1] + part[3]; y++) {
+                    for (int x = part[0]; x < part[0] + part[2]; x++) {
+                        if (!room.contains(x, y) || !grid.inBounds(x, y)) {
+                            continue;
+                        }
+                        int index = grid.index(x, y);
+                        if (!standable(grid.get(index)) || !besideDoor(grid, x, y)) {
+                            continue;
+                        }
+                        mouths.add(index);
+                    }
+                }
+            }
+            if (mouths.size() < 2) {
+                continue;
+            }
+            int origin = mouths.get(0);
+            int[] parent = new int[area];
+            Arrays.fill(parent, -1);
+            int head = 0;
+            int tail = 0;
+            parent[origin] = origin;
+            ctx.queue[tail++] = origin;
+            while (head < tail) {
+                int cell = ctx.queue[head++];
+                int x = grid.x(cell);
+                int y = grid.y(cell);
+                for (int dir = 0; dir < 4; dir++) {
+                    int nx = x + DX[dir];
+                    int ny = y + DY[dir];
+                    if (!grid.inBounds(nx, ny)) {
+                        continue;
+                    }
+                    int next = grid.index(nx, ny);
+                    if (parent[next] >= 0 || ctx.roomOf[next] != room.id || !standable(grid.get(next))) {
+                        continue;
+                    }
+                    parent[next] = cell;
+                    ctx.queue[tail++] = next;
+                }
+            }
+            for (int m = 1; m < mouths.size(); m++) {
+                int cell = mouths.get(m);
+                if (parent[cell] < 0) {
+                    continue;
+                }
+                while (cell != origin) {
+                    ctx.reserved[cell] = true;
+                    cell = parent[cell];
+                }
+            }
+            ctx.reserved[origin] = true;
         }
     }
 

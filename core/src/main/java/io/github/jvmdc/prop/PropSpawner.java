@@ -77,14 +77,27 @@ public final class PropSpawner {
             };
             case CHEST -> "chest";
             case LIGHT -> "torch";
-            case DECOR -> switch ((placement.x * 17 + placement.y) & 3) {
-                case 0 -> "sink";
-                case 1 -> "altar";
-                case 2 -> "pedestal";
-                default -> "power_crystal";
-            };
+            case DECOR -> decorId(placement);
             case FOUNTAIN -> "sink";
             default -> null;
+        };
+    }
+
+    private static String decorId(Placement placement) {
+        if (placement.tags.contains("altar")) {
+            return "altar";
+        }
+        if (placement.tags.contains("sink")) {
+            return "sink";
+        }
+        if (placement.tags.contains("pedestal")) {
+            return "pedestal";
+        }
+        return switch ((placement.x * 17 + placement.y) & 3) {
+            case 0 -> "sink";
+            case 1 -> "altar";
+            case 2 -> "pedestal";
+            default -> "power_crystal";
         };
     }
 
