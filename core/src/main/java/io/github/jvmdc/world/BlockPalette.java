@@ -9,13 +9,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Block colours for a generated floor. Each material has a base colour, a
- * small spread from a 2×2 brick hash, and a darker value on voxels that touch
- * open air. Slots are assigned once so a chunk can greedy-mesh equal colours.
+ * Block colours for a generated floor. Each material has a base colour and a
+ * small spread. The mesh blends those colours across tile boundaries, then
+ * adds a soft 2×2 brick shift so neighbouring blocks ease into each other.
  */
 public final class BlockPalette {
     private final int[] rgbaBySlot = new int[256];
     private final int[][] slots = new int[Kind.values().length][];
+    private final int[][] bases = new int[Kind.values().length][3];
     private final int[] ranges = new int[Kind.values().length];
 
     private BlockPalette() {
@@ -48,6 +49,9 @@ public final class BlockPalette {
             }
             palette.slots[kind.ordinal()] = table;
             palette.ranges[kind.ordinal()] = range;
+            palette.bases[kind.ordinal()][0] = base.getInt(0);
+            palette.bases[kind.ordinal()][1] = base.getInt(1);
+            palette.bases[kind.ordinal()][2] = base.getInt(2);
         }
         return palette;
     }
@@ -65,6 +69,19 @@ public final class BlockPalette {
 
     public int red(int slot) {
         return (rgbaBySlot[slot] >> 24) & 0xFF;
+    }
+
+    public int base(Kind kind, int channel) {
+        return bases[kind.ordinal()][channel];
+    }
+
+    public int range(Kind kind) {
+        return ranges[kind.ordinal()];
+    }
+
+    /** 0..1 hash for one brick cell. */
+    public static float hash01(int x, int y, int z) {
+        return reverseBits((x ^ y ^ z) & 0xFF) / 255f;
     }
 
     /** 2×2×1 bricks, staggered by one each layer. */

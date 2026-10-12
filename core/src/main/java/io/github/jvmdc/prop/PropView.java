@@ -11,6 +11,7 @@ import io.github.jvmdc.assets.ModelPaths;
 import io.github.jvmdc.converter.VoxMesher;
 import io.github.jvmdc.converter.VoxReader;
 import io.github.jvmdc.render.ForwardRenderer;
+import io.github.jvmdc.world.BlockChunks;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,15 +45,21 @@ public final class PropView {
         for (Entity entity : entities) {
             PropTransform transform = TRANSFORM.get(entity);
             PropModel prop = MODEL.get(entity);
-            for (PropModel.Part part : prop.parts) {
-                VoxMesher.VoxMesh mesh = mesh(part.mesh);
+            for (int i = 0; i < prop.parts.size(); i++) {
+                PropModel.Part part = prop.parts.get(i);
+                VoxMesher.VoxMesh mesh = part.local ? rigMesh(prop, i) : mesh(part.mesh);
                 if (mesh == null || mesh.parts.length == 0) {
                     continue;
                 }
                 model.idt();
                 model.translate(transform.x, transform.y, transform.z);
                 model.rotate(0f, 1f, 0f, transform.yaw);
-                model.translate(part.x, part.y + (part.sit ? lift(mesh) : 0f), part.z);
+                if (part.local) {
+                    float half = BlockChunks.VOXELS_PER_BLOCK * 0.5f;
+                    model.translate(part.vx - half, part.vz, -(part.vy - half));
+                } else {
+                    model.translate(part.x, part.y + (part.sit ? lift(mesh) : 0f), part.z);
+                }
                 if (part.rotates) {
                     model.translate(part.pivotX, part.pivotY, part.pivotZ);
                     model.rotate(part.axisX, part.axisY, part.axisZ, part.angle);
@@ -104,6 +111,52 @@ public final class PropView {
             }
         }
         meshes.clear();
+    }
+
+    private VoxMesher.VoxMesh rigMesh(PropModel prop, int index) {
+        String key = prop.id + "#" + index;
+        if (meshes.containsKey(key)) {
+            return meshes.get(key);
+        }
+        List<VoxReader.VoxModel> models = new ArrayList<>();
+        int[][] corner = new int[prop.parts.size()][3];
+        for (int i = 0; i < prop.parts.size(); i++) {
+            PropModel.Part part = prop.parts.get(i);
+            models.add(readModel(part.mesh));
+            corner[i][0] = part.vx;
+            corner[i][1] = part.vy;
+            corner[i][2] = part.vz;
+        }
+        List<RigParts.Piece> pieces = RigParts.cut(models, corner);
+        for (int i = 0; i < pieces.size(); i++) {
+            RigParts.Piece piece = pieces.get(i);
+            int part = i;
+            VoxMesher.VoxMesh built = VoxMesher.buildCorner(piece.model, (x, y, z) -> RigParts.covered(pieces, part, x, y, z));
+            meshes.put(prop.id + "#" + i, built);
+        }
+        return meshes.get(key);
+    }
+
+    private VoxReader.VoxModel readModel(String specifier) {
+        VoxReader.VoxModel empty = new VoxReader.VoxModel();
+        if (specifier == null || specifier.isEmpty()) {
+            return empty;
+        }
+        try {
+            var file = paths.find(specifier);
+            if (file.isEmpty()) {
+                return empty;
+            }
+            VoxReader.VoxScene scene = VoxReader.readScene(file.get().toFile());
+            if (scene.models.isEmpty()) {
+                return empty;
+            }
+            VoxReader.VoxModel model = scene.models.get(0);
+            model.palette = scene.palette;
+            return model;
+        } catch (RuntimeException | java.io.IOException e) {
+            return empty;
+        }
     }
 
     private VoxMesher.VoxMesh mesh(String specifier) {

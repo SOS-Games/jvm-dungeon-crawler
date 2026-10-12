@@ -109,6 +109,26 @@ public class VoxMesher {
     }
 
     /**
+     * Y-up mesh whose origin is voxel (0,0,0). {@code outside} hides a face that
+     * sits against another part, so the two surfaces are not drawn on top of each other.
+     */
+    public static VoxMesh buildCorner(VoxReader.VoxModel model, Outside outside) {
+        if (model == null || model.grid == null) {
+            return new VoxMesh(new Mesh[0], 1f);
+        }
+        Builder builder = new Builder(model.palette);
+        builder.cornerOrigin = true;
+        builder.outside = outside;
+        builder.addModel(model, new float[] {1, 0, 0, 0, 1, 0, 0, 0, 1}, new float[] {0, 0, 0});
+        return builder.finish(false);
+    }
+
+    /** True when a cell outside this part is already solid in an earlier part. */
+    public interface Outside {
+        boolean covers(int x, int y, int z);
+    }
+
+    /**
      * Greedy-meshes one chunk. {@code voxels} is x + sizeX * (y + sizeY * z),
      * with a one-voxel pad on x and y so a face on the chunk edge is dropped
      * when the next chunk is solid. 0 is empty. Any other byte is a slot in
@@ -117,6 +137,20 @@ public class VoxMesher {
      */
     public static VolumeMesh meshVolume(byte[] voxels, int sizeX, int sizeY, int sizeZ, int[] rgbaBySlot) {
         return GreedyMesh.build(voxels, sizeX, sizeY, sizeZ, rgbaBySlot);
+    }
+
+    /**
+     * Same as {@link #meshVolume}, but rectangles stop on block boundaries and
+     * each corner takes its colour from {@code color} (chunk voxel x, map y, up).
+     */
+    public static VolumeMesh meshVolume(byte[] voxels, int sizeX, int sizeY, int sizeZ, int[] rgbaBySlot,
+                                        int originX, int originY, int block, VoxelColor color) {
+        return GreedyMesh.build(voxels, sizeX, sizeY, sizeZ, rgbaBySlot, originX, originY, block, color);
+    }
+
+    /** Colour at a point in the chunk, packed as red, green, blue. */
+    public interface VoxelColor {
+        int at(float x, float y, float z);
     }
 
     private static VoxReader.VoxModel flipX(VoxReader.VoxModel model) {
@@ -153,6 +187,9 @@ public class VoxMesher {
         private final float[] p2 = new float[3];
         private final float[] p3 = new float[3];
         private boolean local;
+        /** Y-up, with voxel (0,0,0) at the mesh origin instead of the centre. */
+        private boolean cornerOrigin;
+        private Outside outside;
         private boolean flipWinding;
         private final VertexAttributes attributes = new VertexAttributes(
                 VertexAttribute.Position(),
@@ -191,27 +228,27 @@ public class VoxMesher {
                                 ((rgba >> 8) & 0xFF) / 255f,
                                 glows(colIdx) ? 1f : 0f
                         );
-                        if (z + 1 >= sizeZ || !occupied(grid[x][y][z + 1])) {
+                        if (!covered(grid, sizeX, sizeY, sizeZ, x, y, z + 1)) {
                             addQuad(model, grid, x, y, z, 0, 0, 1, rotation, translation, packedColor,
                                     x, y, z + 1, x + 1, y, z + 1, x + 1, y + 1, z + 1, x, y + 1, z + 1);
                         }
-                        if (z - 1 < 0 || !occupied(grid[x][y][z - 1])) {
+                        if (!covered(grid, sizeX, sizeY, sizeZ, x, y, z - 1)) {
                             addQuad(model, grid, x, y, z, 0, 0, -1, rotation, translation, packedColor,
                                     x, y + 1, z, x + 1, y + 1, z, x + 1, y, z, x, y, z);
                         }
-                        if (x + 1 >= sizeX || !occupied(grid[x + 1][y][z])) {
+                        if (!covered(grid, sizeX, sizeY, sizeZ, x + 1, y, z)) {
                             addQuad(model, grid, x, y, z, 1, 0, 0, rotation, translation, packedColor,
                                     x + 1, y, z, x + 1, y + 1, z, x + 1, y + 1, z + 1, x + 1, y, z + 1);
                         }
-                        if (x - 1 < 0 || !occupied(grid[x - 1][y][z])) {
+                        if (!covered(grid, sizeX, sizeY, sizeZ, x - 1, y, z)) {
                             addQuad(model, grid, x, y, z, -1, 0, 0, rotation, translation, packedColor,
                                     x, y + 1, z, x, y, z, x, y, z + 1, x, y + 1, z + 1);
                         }
-                        if (y - 1 < 0 || !occupied(grid[x][y - 1][z])) {
+                        if (!covered(grid, sizeX, sizeY, sizeZ, x, y - 1, z)) {
                             addQuad(model, grid, x, y, z, 0, -1, 0, rotation, translation, packedColor,
                                     x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1);
                         }
-                        if (y + 1 >= sizeY || !occupied(grid[x][y + 1][z])) {
+                        if (!covered(grid, sizeX, sizeY, sizeZ, x, y + 1, z)) {
                             addQuad(model, grid, x, y, z, 0, 1, 0, rotation, translation, packedColor,
                                     x + 1, y + 1, z, x, y + 1, z, x, y + 1, z + 1, x + 1, y + 1, z + 1);
                         }
@@ -226,9 +263,10 @@ public class VoxMesher {
          */
         private void corner(VoxReader.VoxModel model, float[] rotation, float[] translation,
                             int x, int y, int z, float[] out) {
-            float lx = local ? x : x - model.sizeX * 0.5f;
-            float ly = local ? y : y - model.sizeY * 0.5f;
-            float lz = local ? z : z - model.sizeZ * 0.5f;
+            boolean fromCorner = local || cornerOrigin;
+            float lx = fromCorner ? x : x - model.sizeX * 0.5f;
+            float ly = fromCorner ? y : y - model.sizeY * 0.5f;
+            float lz = fromCorner ? z : z - model.sizeZ * 0.5f;
             float wx = rotation[0] * lx + rotation[1] * ly + rotation[2] * lz + translation[0];
             float wy = rotation[3] * lx + rotation[4] * ly + rotation[5] * lz + translation[1];
             float wz = rotation[6] * lx + rotation[7] * ly + rotation[8] * lz + translation[2];
@@ -379,6 +417,13 @@ public class VoxMesher {
             maxX = Math.max(maxX, p[0]);
             maxY = Math.max(maxY, p[1]);
             maxZ = Math.max(maxZ, p[2]);
+        }
+
+        private boolean covered(byte[][][] grid, int sx, int sy, int sz, int x, int y, int z) {
+            if (x >= 0 && y >= 0 && z >= 0 && x < sx && y < sy && z < sz && occupied(grid[x][y][z])) {
+                return true;
+            }
+            return outside != null && outside.covers(x, y, z);
         }
 
         /** Empty air and palette slot 17 (a hollow cell) do not hide a face. */

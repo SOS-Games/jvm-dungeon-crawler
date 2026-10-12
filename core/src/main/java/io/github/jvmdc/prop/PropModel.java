@@ -30,5 +30,10 @@ public final class PropModel implements Component {
         public boolean rotates;
         /** Raise a centred mesh so its bottom sits on the prop origin. */
         public boolean sit;
+        /** Corner-origin mesh, posed in parent voxels. Later parts are cut against earlier ones. */
+        public boolean local;
+        public int vx;
+        public int vy;
+        public int vz;
     }
 }

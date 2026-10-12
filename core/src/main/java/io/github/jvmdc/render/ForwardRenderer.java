@@ -58,6 +58,7 @@ public final class ForwardRenderer {
     private float clearR = CLEAR_WINDOW[0];
     private float clearG = CLEAR_WINDOW[1];
     private float clearB = CLEAR_WINDOW[2];
+    private float faceNoise;
 
     public ForwardRenderer() {
         shader = new ShaderProgram(VERT, FRAG);
@@ -97,12 +98,11 @@ public final class ForwardRenderer {
         HdpiUtils.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClearColor(clearR, clearG, clearB, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-        Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
-        Gdx.gl.glEnable(GL20.GL_CULL_FACE);
-        Gdx.gl.glCullFace(GL20.GL_BACK);
+        opaque();
         lampRadius = 0f;
         sunScale = 1f;
         lightCount = 0;
+        faceNoise = 0f;
         shader.bind();
     }
 
@@ -117,6 +117,11 @@ public final class ForwardRenderer {
         clearR = CLEAR_WINDOW[0];
         clearG = CLEAR_WINDOW[1];
         clearB = CLEAR_WINDOW[2];
+    }
+
+    /** Fine grain on block faces. Off for figures and props. */
+    public void setFaceNoise(boolean on) {
+        faceNoise = on ? 1f : 0f;
     }
 
     /** 1 keeps the outdoor sun. A small value leaves the floor dark apart from point lights. */
@@ -147,10 +152,21 @@ public final class ForwardRenderer {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     }
 
+    /** Depth test on, depth write on, back faces culled. Used for the floor and for props. */
+    public void opaque() {
+        Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
+        Gdx.gl.glDepthFunc(GL20.GL_LEQUAL);
+        Gdx.gl.glDepthMask(true);
+        Gdx.gl.glEnable(GL20.GL_CULL_FACE);
+        Gdx.gl.glCullFace(GL20.GL_BACK);
+        Gdx.gl.glFrontFace(GL20.GL_CCW);
+    }
+
     public void draw(Camera camera, Mesh[] parts, Matrix4 model) {
         if (parts == null || parts.length == 0) {
             return;
         }
+        opaque();
         mvp.set(camera.combined).mul(model);
         shader.setUniformMatrix("u_mvp", mvp);
         shader.setUniformMatrix("u_model", model);
@@ -161,6 +177,7 @@ public final class ForwardRenderer {
         shader.setUniform3fv("u_light_pos", lightPos, 0, MAX_LIGHTS * 3);
         shader.setUniform3fv("u_light_color", lightColor, 0, MAX_LIGHTS * 3);
         shader.setUniform1fv("u_light_radius", lightRadius, 0, MAX_LIGHTS);
+        shader.setUniformf("u_face_noise", faceNoise);
         for (Mesh part : parts) {
             part.render(shader, GL20.GL_TRIANGLES);
         }
@@ -265,7 +282,7 @@ public final class ForwardRenderer {
         GLFrameBuffer.FrameBufferBuilder builder = new GLFrameBuffer.FrameBufferBuilder(width, height);
         builder.addFloatAttachment(GL30.GL_RGBA16F, GL30.GL_RGBA, GL30.GL_FLOAT, false);
         if (depth) {
-            builder.addBasicDepthRenderBuffer();
+            builder.addDepthRenderBuffer(GL30.GL_DEPTH_COMPONENT24);
         }
         FrameBuffer buffer = builder.build();
         Texture texture = buffer.getColorBufferTexture();
@@ -456,7 +473,14 @@ public final class ForwardRenderer {
         uniform vec3 u_light_pos[MAX_LIGHTS];
         uniform vec3 u_light_color[MAX_LIGHTS];
         uniform float u_light_radius[MAX_LIGHTS];
+        uniform float u_face_noise;
         out vec4 frag;
+
+        float hash4(vec4 p) {
+            p = fract(p * 0.3183099 + 0.1) - fract(p + 23.22121);
+            p *= 17.0;
+            return (fract(p.x * p.y * (1.0 - p.z) * p.w * (p.x + p.y + p.z + p.w)) - 0.5) * 2.0;
+        }
 
         vec3 srgbToLinear(vec3 srgb) {
             bvec3 cutoff = lessThan(srgb, vec3(0.04045));
@@ -520,6 +544,14 @@ public final class ForwardRenderer {
             reflected *= ao;
 
             vec3 col = srgbToLinear(v_color.rgb);
+            if (u_face_noise > 0.5) {
+                vec3 blockPos = v_wpos / 11.0;
+                vec3 face = normalize(v_normal);
+                float noise = hash4(vec4(floor(blockPos * 3.0 - face * 0.5), 0.0));
+                const float W_INV = 1.0 / 1.055;
+                vec3 nd = sqrt(max(col, vec3(0.0))) * W_INV + noise * 0.015;
+                col = nd * nd * (W_INV * W_INV);
+            }
             // Palette slots marked glowing add light after the corner shadow.
             if (v_color.a > 0.5) {
                 emitted += 20.0 * col;

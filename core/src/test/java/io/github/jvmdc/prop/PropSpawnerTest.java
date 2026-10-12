@@ -76,7 +76,7 @@ class PropSpawnerTest {
                 PropModel.Part first = model.parts.get(0);
                 boolean separated = false;
                 for (PropModel.Part part : model.parts) {
-                    if (part.rotates || part.x != first.x || part.y != first.y || part.z != first.z) {
+                    if (part.rotates || part.vx != first.vx || part.vy != first.vy || part.vz != first.vz) {
                         separated = true;
                     }
                     assertFalse(part.mesh.isEmpty(), model.id);
@@ -113,5 +113,50 @@ class PropSpawnerTest {
         assertEquals(0, chests, "seed " + seed);
         assertTrue(lights >= placedLights, "seed " + seed);
         assertTrue(rig, "seed " + seed);
+        if (seed == 1L) {
+            assertTorchSitsOffTheWall(catalog, dungeon, engine);
+            assertFloorPropsSitOnTheFloor(engine);
+        }
+    }
+
+    private static void assertTorchSitsOffTheWall(PropCatalog catalog, Dungeon dungeon, Engine engine) {
+        int depth = catalog.mountDepth("WallSconce");
+        int checked = 0;
+        for (Entity entity : engine.getEntities()) {
+            PropModel model = MODEL.get(entity);
+            if (!"torch".equals(model.id)) {
+                continue;
+            }
+            PropTransform at = TRANSFORM.get(entity);
+            io.github.jvmdc.dungeongen.common.Facing facing = io.github.jvmdc.dungeongen.common.Facing.NONE;
+            for (Placement placement : dungeon.placements) {
+                if (placement.type == PlacementType.LIGHT && placement.x == at.tileX && placement.y == at.tileY) {
+                    facing = placement.facing;
+                }
+            }
+            float tile = io.github.jvmdc.world.BlockChunks.VOXELS_PER_TILE;
+            float centerX = at.tileX * tile + tile * 0.5f;
+            float centerZ = -(at.tileY * tile + tile * 0.5f);
+            float along = (at.x - centerX) * facing.dx + (at.z - centerZ) * -facing.dy;
+            assertEquals(tile * 0.5f + 1f + depth * 0.5f, along, 0.05f, "torch " + at.tileX + "," + at.tileY);
+            assertEquals(io.github.jvmdc.world.BlockChunks.FLOOR + 14f, at.y, 0.01f);
+            checked++;
+        }
+        assertTrue(checked > 0);
+    }
+
+    private static void assertFloorPropsSitOnTheFloor(Engine engine) {
+        int checked = 0;
+        for (Entity entity : engine.getEntities()) {
+            PropModel model = MODEL.get(entity);
+            if (!"chest".equals(model.id)) {
+                continue;
+            }
+            PropTransform at = TRANSFORM.get(entity);
+            assertEquals(io.github.jvmdc.world.BlockChunks.FLOOR, at.y, 0.01f);
+            assertTrue(model.parts.get(0).sit);
+            checked++;
+        }
+        assertTrue(checked > 0);
     }
 }

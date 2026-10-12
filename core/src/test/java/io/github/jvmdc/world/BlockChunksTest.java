@@ -7,6 +7,7 @@ import io.github.jvmdc.dungeongen.LayoutConfig;
 import io.github.jvmdc.dungeongen.Layouts;
 import io.github.jvmdc.dungeongen.common.Dungeon;
 import io.github.jvmdc.dungeongen.common.Tile;
+import io.github.jvmdc.dungeongen.common.TileGrid;
 import io.github.jvmdc.world.BlockPalette.Kind;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +36,59 @@ class BlockChunksTest {
         VolumeMesh mesh = cube(2, 1, 1, 1);
         assertTrue(mesh.exposed > mesh.quads, "exposed " + mesh.exposed + " quads " + mesh.quads);
         assertEquals(6, mesh.quads);
+    }
+
+    @Test
+    void mapTileIsThreeBlocksWideAndLong() throws Exception {
+        assertEquals(3, BlockChunks.BLOCKS_PER_TILE);
+        assertEquals(33, BlockChunks.VOXELS_PER_TILE);
+        assertEquals(33, BlockChunks.STORY);
+        TileGrid grid = new TileGrid(1, 1);
+        grid.set(0, 0, Tile.WALL);
+        Dungeon dungeon = new Dungeon(0, LayoutConfig.attached(), grid,
+                java.util.List.of(), java.util.List.of(), null, -1, -1);
+        BlockChunks.ChunkMesh chunk = BlockChunks.build(dungeon, BlockPalette.load(paletteFile())).get(0);
+        float maxX = 0f;
+        float maxY = 0f;
+        float minZ = 0f;
+        for (float[] verts : chunk.mesh.vertices) {
+            for (int i = 0; i < verts.length; i += VolumeMesh.VERTEX_SIZE) {
+                maxX = Math.max(maxX, verts[i]);
+                maxY = Math.max(maxY, verts[i + 1]);
+                minZ = Math.min(minZ, verts[i + 2]);
+            }
+        }
+        assertEquals(BlockChunks.VOXELS_PER_TILE, maxX, 0.01f);
+        assertEquals(-BlockChunks.VOXELS_PER_TILE, minZ, 0.01f);
+        assertEquals(BlockChunks.HEIGHT, maxY, 0.01f);
+        int side = 4 * 3 * 4;
+        int caps = 2 * 3 * 3;
+        assertEquals(side + caps, chunk.mesh.quads);
+        assertEquals(4 * 33 * BlockChunks.HEIGHT + 2 * 33 * 33, chunk.mesh.exposed);
+    }
+
+    @Test
+    void floorAndCeilingAreSeparate() throws Exception {
+        TileGrid grid = new TileGrid(1, 1);
+        grid.set(0, 0, Tile.ROOM_FLOOR);
+        Dungeon dungeon = new Dungeon(0, LayoutConfig.attached(), grid,
+                java.util.List.of(), java.util.List.of(), null, -1, -1);
+        BlockChunks.LevelMesh parts = BlockChunks.buildParts(dungeon, BlockPalette.load(paletteFile()));
+        assertEquals(30, parts.shell.get(0).mesh.quads);
+        assertEquals(30, parts.ceiling.get(0).mesh.quads);
+        assertTrue(hasNormal(parts.shell.get(0).mesh, 0f, 1f, 0f));
+        assertTrue(hasNormal(parts.ceiling.get(0).mesh, 0f, -1f, 0f));
+    }
+
+    @Test
+    void colourEasesBetweenTiles() throws Exception {
+        TileGrid grid = new TileGrid(2, 1);
+        grid.set(0, 0, Tile.ROOM_FLOOR);
+        grid.set(1, 0, Tile.CORRIDOR_FLOOR);
+        BlockPalette palette = BlockPalette.load(paletteFile());
+        int center = BlockChunks.sampleRgb(palette, grid, 16.5f, 16.5f, 0.5f) >> 16;
+        int edge = BlockChunks.sampleRgb(palette, grid, 33f, 16.5f, 0.5f) >> 16;
+        assertTrue(center > edge, "center " + center + " edge " + edge);
     }
 
     @Test

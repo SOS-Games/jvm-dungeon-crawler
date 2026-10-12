@@ -22,6 +22,7 @@ dependencies {
 
 test {
   useJUnitPlatform()
+  maxHeapSize = '2g'
 }
 
 tasks.register('converter', JavaExec) {

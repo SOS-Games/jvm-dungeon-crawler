@@ -4,6 +4,9 @@ import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import io.github.jvmdc.assets.AssetRoots;
 import io.github.jvmdc.assets.ManifestLibrary;
+import io.github.jvmdc.assets.ModelPaths;
+import io.github.jvmdc.converter.VoxReader;
+import io.github.jvmdc.world.BlockChunks;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +39,31 @@ public final class PropCatalog {
         catalog.readPlaceables(manifest.resolve("placeables.json"));
         catalog.addSprites();
         return catalog;
+    }
+
+    /** Voxels deep along the axis that points out from a wall. */
+    public int mountDepth(String modelId) {
+        ModelDef model = models.get(modelId);
+        if (model != null && model.sy > 0f) {
+            return Math.max(1, Math.round(model.sy));
+        }
+        String specifier = vox(modelId);
+        if (specifier.isEmpty()) {
+            return 1;
+        }
+        try {
+            var file = ModelPaths.locate().find(specifier);
+            if (file.isEmpty()) {
+                return 1;
+            }
+            VoxReader.VoxScene scene = VoxReader.readScene(file.get().toFile());
+            if (scene.models.isEmpty()) {
+                return 1;
+            }
+            return Math.max(1, scene.models.get(0).sizeY);
+        } catch (IOException | RuntimeException e) {
+            return 1;
+        }
     }
 
     public String vox(String modelId) {
@@ -87,7 +115,7 @@ public final class PropCatalog {
             crystal.lightR = 2.2f;
             crystal.lightG = 4.5f;
             crystal.lightB = 6.5f;
-            crystal.lightRadius = 3.5f * 11f;
+            crystal.lightRadius = 3.5f * BlockChunks.VOXELS_PER_TILE;
         }
     }
 
@@ -100,6 +128,7 @@ public final class PropCatalog {
         def.blocksSight = blocksSight;
         def.verb = verb;
         def.wall = wall;
+        def.placement = wall ? "wall" : "floor";
         def.state = "idle";
         return def;
     }
@@ -111,7 +140,7 @@ public final class PropCatalog {
         def.lightR = r;
         def.lightG = g;
         def.lightB = b;
-        def.lightRadius = tiles * 11f;
+        def.lightRadius = tiles * BlockChunks.VOXELS_PER_TILE;
         return def;
     }
 
@@ -189,6 +218,7 @@ public final class PropCatalog {
         def.blocksSight = node.getBoolean("blocks_sight", false);
         String where = node.getString("placement", "floor");
         def.wall = "wall".equals(where) || "wall_face".equals(where);
+        def.placement = where;
         JsonValue states = node.get("states");
         if (states != null && states.child != null && states.child.isString()) {
             def.state = states.child.asString();
@@ -206,7 +236,7 @@ public final class PropCatalog {
                 def.lightG = color.getFloat(1) / 255f * 8f;
                 def.lightB = color.getFloat(2) / 255f * 8f;
             }
-            def.lightRadius = light.getFloat("radius_tiles", 3f) * 11f;
+            def.lightRadius = light.getFloat("radius_tiles", 3f) * BlockChunks.VOXELS_PER_TILE;
         }
         return def;
     }
@@ -269,6 +299,8 @@ public final class PropCatalog {
         public boolean blocksMovement;
         public boolean blocksSight;
         public boolean wall;
+        /** floor, wall, or wall_face. Wall mounts use the facing as the outward normal. */
+        public String placement = "floor";
         public String verb = "";
         public String state = "";
         public boolean light;

@@ -18,6 +18,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Align;
+import io.github.jvmdc.debug.LoadTrace;
 import io.github.jvmdc.dungeongen.LayoutConfig;
 import io.github.jvmdc.dungeongen.Layouts;
 import io.github.jvmdc.dungeongen.common.Dungeon;
@@ -36,8 +37,12 @@ import io.github.jvmdc.prop.PropView;
 import io.github.jvmdc.render.ForwardRenderer;
 import io.github.jvmdc.viewer.VoxCatalog;
 import io.github.jvmdc.world.BlockChunks;
+import io.github.jvmdc.world.ViewRange;
 import io.github.jvmdc.world.BlockPalette;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -95,6 +100,9 @@ public class JvmDcApp extends ApplicationAdapter {
     private final List<DrawnChunk> flyShell = new ArrayList<>();
     private final List<DrawnChunk> flyCeiling = new ArrayList<>();
     private String flyNote = "";
+    private FlyLoad flyBuild;
+    /** Last fly-load timings, kept on screen after the spinner goes. */
+    private String flyLoadNote = "";
     private PropCatalog propCatalog;
     private Engine props;
     private PropView propView;
@@ -255,6 +263,10 @@ public class JvmDcApp extends ApplicationAdapter {
         public boolean keyDown(int keycode) {
             if (keycode == Input.Keys.ESCAPE && mode == Mode.VIEW) {
                 mode = Mode.BROWSER;
+                return true;
+            }
+            if (keycode == Input.Keys.ESCAPE && flyBuild != null) {
+                cancelFlyLoad();
                 return true;
             }
             if (keycode == Input.Keys.ESCAPE && mode == Mode.LOADING) {
@@ -460,7 +472,8 @@ public class JvmDcApp extends ApplicationAdapter {
     }
 
     private void openDungeon() {
-        boolean flying = mode == Mode.FLY;
+        boolean flying = mode == Mode.FLY || flyBuild != null;
+        flyBuild = null;
         disposeFly();
         dungeon = Layouts.of(Layouts.DEFAULT).generate(LayoutConfig.attached(), dungeonSeed);
         copiedTile = "";
@@ -482,36 +495,123 @@ public class JvmDcApp extends ApplicationAdapter {
         if (dungeon == null) {
             return;
         }
-        if (flySeed != dungeon.seed || flyShell.isEmpty()) {
-            disposeFly();
-            try {
-                BlockPalette palette = BlockPalette.load(
-                        AssetRoots.locate().custom.resolve("manifest").resolve("block_palette.json"));
-                BlockChunks.LevelMesh level = BlockChunks.buildParts(dungeon, palette);
-                uploadFly(level.shell, flyShell);
-                uploadFly(level.ceiling, flyCeiling);
-                if (propCatalog == null) {
-                    propCatalog = PropCatalog.load(AssetRoots.locate());
-                }
-                if (propView == null) {
-                    propView = new PropView(ModelPaths.locate());
-                }
-                props = PropSpawner.populate(dungeon, propCatalog);
-                placeFlySpawn();
-                flySeed = dungeon.seed;
-                cutaway = false;
-                flyNote = "";
-            } catch (Exception e) {
-                disposeFly();
-                flyNote = "could not build the 3D floor";
-                mode = Mode.DUNGEON;
-                return;
-            }
+        if (flySeed == dungeon.seed && !flyShell.isEmpty()) {
+            showFly();
+            return;
         }
+        disposeFly();
+        flyBuild = new FlyLoad();
+        flyBuild.trace = new LoadTrace();
+        flyBuild.trace.total = chunkCount();
+        mode = Mode.LOADING;
+    }
+
+    private void showFly() {
         mode = Mode.FLY;
         Gdx.input.setCursorCatched(!cutaway);
         Gdx.input.getDeltaX();
         Gdx.input.getDeltaY();
+    }
+
+    private void cancelFlyLoad() {
+        flyBuild = null;
+        disposeFly();
+        mode = Mode.DUNGEON;
+    }
+
+    /** One slice of the floor build. True when the fly view is ready or the build failed. */
+    private boolean pumpFly() {
+        long start = System.nanoTime();
+        LoadTrace trace = flyBuild.trace;
+        try {
+            if (flyBuild.palette == null) {
+                trace.begin("palette");
+                try {
+                    flyBuild.palette = BlockPalette.load(
+                            AssetRoots.locate().custom.resolve("manifest").resolve("block_palette.json"));
+                } finally {
+                    trace.end();
+                }
+                if (System.nanoTime() - start >= LOAD_BUDGET_NS) {
+                    return false;
+                }
+            }
+            TileGrid grid = dungeon.grid;
+            int across = (grid.width + BlockChunks.CHUNK_TILES - 1) / BlockChunks.CHUNK_TILES;
+            while (flyBuild.tileY < grid.height && System.nanoTime() - start < LOAD_BUDGET_NS) {
+                long chunkStart = System.nanoTime();
+                BlockChunks.partAt(dungeon, flyBuild.palette, flyBuild.tileX, flyBuild.tileY, (shell, ceiling) -> {
+                    trace.begin("upload");
+                    try {
+                        uploadFly(List.of(shell), flyShell);
+                        uploadFly(List.of(ceiling), flyCeiling);
+                    } finally {
+                        trace.end();
+                    }
+                }, trace);
+                trace.noteChunk(System.nanoTime() - chunkStart);
+                flyBuild.tileX += BlockChunks.CHUNK_TILES;
+                if (flyBuild.tileX >= grid.width) {
+                    flyBuild.tileX = 0;
+                    flyBuild.tileY += BlockChunks.CHUNK_TILES;
+                }
+                trace.done = flyBuild.tileY / BlockChunks.CHUNK_TILES * across
+                        + flyBuild.tileX / BlockChunks.CHUNK_TILES;
+            }
+            if (flyBuild.tileY < grid.height) {
+                return false;
+            }
+            if (propCatalog == null) {
+                trace.begin("catalog");
+                try {
+                    propCatalog = PropCatalog.load(AssetRoots.locate());
+                } finally {
+                    trace.end();
+                }
+            }
+            if (propView == null) {
+                propView = new PropView(ModelPaths.locate());
+            }
+            trace.begin("place props");
+            try {
+                props = PropSpawner.populate(dungeon, propCatalog, trace);
+            } finally {
+                trace.end();
+            }
+            placeFlySpawn();
+            flySeed = dungeon.seed;
+            cutaway = false;
+            flyNote = "";
+            finishFlyTrace(trace);
+            flyBuild = null;
+            showFly();
+            return true;
+        } catch (Exception e) {
+            disposeFly();
+            flyBuild = null;
+            flyNote = "could not build the 3D floor";
+            mode = Mode.DUNGEON;
+            return true;
+        }
+    }
+
+    private int chunkCount() {
+        TileGrid grid = dungeon.grid;
+        int across = (grid.width + BlockChunks.CHUNK_TILES - 1) / BlockChunks.CHUNK_TILES;
+        int down = (grid.height + BlockChunks.CHUNK_TILES - 1) / BlockChunks.CHUNK_TILES;
+        return across * down;
+    }
+
+    private void finishFlyTrace(LoadTrace trace) {
+        flyLoadNote = trace.report();
+        System.out.println(flyLoadNote);
+        try {
+            Path out = Path.of("build", "fly-load.txt");
+            Files.createDirectories(out.getParent());
+            Files.writeString(out, flyLoadNote);
+        } catch (IOException ignored) {
+            flyLoadNote = flyLoadNote + "\n(could not write build/fly-load.txt)";
+        }
     }
 
     private void uploadFly(List<BlockChunks.ChunkMesh> chunks, List<DrawnChunk> into) {
@@ -572,7 +672,9 @@ public class JvmDcApp extends ApplicationAdapter {
         if (propView != null) {
             propView.uploadLights(props, view, cutaway, renderer);
         }
+        renderer.setFaceNoise(true);
         drawFlyChunks(view, !cutaway);
+        renderer.setFaceNoise(false);
         if (propView != null) {
             propView.draw(props, renderer, view, model);
         }
@@ -583,6 +685,20 @@ public class JvmDcApp extends ApplicationAdapter {
                 + (cutaway ? "    top-down, ceilings hidden" : "    fly")
                 + "    WASD mouse    space up    C cutaway    Esc map";
         font.draw(batch, status, 12, height - 8);
+        if (!flyLoadNote.isEmpty()) {
+            String[] lines = flyLoadNote.split("\n");
+            float blockH = lines.length * 16f + 8f;
+            batch.setColor(0.04f, 0.05f, 0.06f, 0.72f);
+            batch.draw(pixel, 8f, height - 28f - blockH, 420f, blockH);
+            batch.setColor(Color.WHITE);
+            font.setColor(0.86f, 0.87f, 0.9f, 1f);
+            float y = height - 36f;
+            for (String line : lines) {
+                font.draw(batch, line, 16f, y);
+                y -= 16f;
+            }
+        }
+        font.setColor(0.1f, 0.1f, 0.12f, 1f);
         batch.end();
     }
 
@@ -632,7 +748,7 @@ public class JvmDcApp extends ApplicationAdapter {
         }
         float len = (float) Math.sqrt(len2);
         boolean fast = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
-        float speed = (fast ? 110f : 36f) * dt / len;
+        float speed = (fast ? 330f : 108f) * dt / len;
         flyPos.x += mx * speed;
         flyPos.y += my * speed;
         flyPos.z += mz * speed;
@@ -647,8 +763,8 @@ public class JvmDcApp extends ApplicationAdapter {
         camera.position.set(flyPos);
         camera.direction.set(MathUtils.sin(yawRad) * cp, MathUtils.sin(pitchRad), -MathUtils.cos(yawRad) * cp);
         camera.up.set(0f, 1f, 0f);
-        camera.near = 0.2f;
-        camera.far = 8000f;
+        camera.near = ViewRange.near();
+        camera.far = ViewRange.far(dungeon.grid.width, dungeon.grid.height);
         camera.update();
     }
 
@@ -665,8 +781,8 @@ public class JvmDcApp extends ApplicationAdapter {
         topCamera.position.set(cx, BlockChunks.HEIGHT + 80f, cz);
         topCamera.up.set(0f, 0f, 1f);
         topCamera.lookAt(cx, 0f, cz);
-        topCamera.near = 1f;
-        topCamera.far = BlockChunks.HEIGHT + 400f;
+        topCamera.near = ViewRange.near();
+        topCamera.far = BlockChunks.HEIGHT + 80f + BlockChunks.VOXELS_PER_TILE;
         topCamera.update();
     }
 
@@ -831,6 +947,21 @@ public class JvmDcApp extends ApplicationAdapter {
 
     private void renderLoading(int width, int height) {
         // The first frame only draws. Work starts on the next frame, after this picture is up.
+        if (flyBuild != null) {
+            if (!flyBuild.armed) {
+                flyBuild.armed = true;
+            } else if (pumpFly()) {
+                if (mode == Mode.FLY) {
+                    renderFly(width, height);
+                } else {
+                    renderDungeon(width, height);
+                }
+                return;
+            }
+            String detail = flyBuild.trace == null ? "" : flyBuild.trace.report();
+            drawSpinner(width, height, "Loading the floor", "Esc for the map", detail);
+            return;
+        }
         if (catalogScan == null) {
             catalogScan = new VoxCatalog.Scan();
         } else if (catalogScan.pump(LOAD_BUDGET_NS)) {
@@ -844,6 +975,10 @@ public class JvmDcApp extends ApplicationAdapter {
             renderBrowser(width, height);
             return;
         }
+        drawSpinner(width, height, "Loading assets", "Esc for the menu", "");
+    }
+
+    private void drawSpinner(int width, int height, String label, String hint, String detail) {
         renderer.begin();
         renderer.end(false);
         beginText(width, height);
@@ -861,13 +996,23 @@ public class JvmDcApp extends ApplicationAdapter {
         }
         batch.setColor(Color.WHITE);
         font.setColor(0.15f, 0.16f, 0.18f, 1f);
-        String label = "Loading assets";
         layout.setText(font, label);
         font.draw(batch, label, cx - layout.width * 0.5f, cy - 52f);
         font.setColor(0.35f, 0.37f, 0.4f, 1f);
-        String hint = "Esc for the menu";
         layout.setText(font, hint);
         font.draw(batch, hint, cx - layout.width * 0.5f, cy - 74f);
+        if (detail != null && !detail.isEmpty()) {
+            font.setColor(0.22f, 0.24f, 0.28f, 1f);
+            float y = cy - 102f;
+            for (String line : detail.split("\n")) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+                layout.setText(font, line);
+                font.draw(batch, line, cx - layout.width * 0.5f, y);
+                y -= layout.height + 2f;
+            }
+        }
         font.setColor(0.1f, 0.1f, 0.12f, 1f);
         batch.end();
     }
@@ -1553,6 +1698,15 @@ public class JvmDcApp extends ApplicationAdapter {
             }
         }
         return text.substring(0, lo) + "...";
+    }
+
+    /** Floor build shown on the asset loader. The first frame only draws the spinner. */
+    private static final class FlyLoad {
+        boolean armed;
+        BlockPalette palette;
+        int tileX;
+        int tileY;
+        LoadTrace trace;
     }
 
     /** One uploaded chunk. originY is the map axis; the mesh is placed at z = -originY. */
