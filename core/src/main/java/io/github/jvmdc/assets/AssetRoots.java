@@ -24,9 +24,9 @@ public final class AssetRoots {
     public static AssetRoots locate() {
         Path repo = repoRoot(Path.of("").toAbsolutePath());
         Path assets = repo.resolve("assets");
-        Path custom = assets.resolve("custom");
+        Path custom = repo.resolve("custom_assets");
         if (!Files.isDirectory(custom)) {
-            custom = repo.resolve("custom_assets").resolve("assets").resolve("custom");
+            custom = assets.resolve("custom");
         }
         return new AssetRoots(repo, assets, custom, sourceAssets(repo));
     }

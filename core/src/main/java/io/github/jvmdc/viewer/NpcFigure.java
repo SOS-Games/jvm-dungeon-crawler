@@ -2,7 +2,9 @@ package io.github.jvmdc.viewer;
 
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import io.github.jvmdc.assets.AssetDef;
 import io.github.jvmdc.assets.AssetRoots;
+import io.github.jvmdc.assets.CustomAssetRegistry;
 import io.github.jvmdc.converter.VoxMesher;
 import io.github.jvmdc.converter.VoxReader;
 
@@ -325,6 +327,39 @@ final class NpcFigure {
                 String label = rust.replaceAll("([a-z])([A-Z])", "$1 $2").toLowerCase() + " " + sex;
                 assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder,
                         rust.toLowerCase() + "/" + sex, parts, family));
+            }
+        }
+        CustomAssetRegistry registry = CustomAssetRegistry.getInstance();
+        for (AssetDef asset : registry.all().values()) {
+            if ("npc".equals(asset.category) || asset.body != null) {
+                List<Part> parts = new ArrayList<>();
+                for (AssetDef.PartDef pDef : asset.parts) {
+                    if (pDef.resolvedPath != null && Files.isRegularFile(pDef.resolvedPath)) {
+                        parts.add(new Part(
+                                pDef.resolvedPath,
+                                pDef.offset[0], pDef.offset[1], pDef.offset[2],
+                                pDef.mirror,
+                                pDef.slot != null ? pDef.slot : "chest",
+                                pDef.slot != null && pDef.slot.contains("left")
+                        ));
+                    }
+                }
+                if (!parts.isEmpty()) {
+                    String species = asset.body != null && asset.body.species != null
+                            ? asset.body.species.toLowerCase()
+                            : asset.id.substring(asset.id.lastIndexOf('.') + 1);
+                    String name = asset.body != null && asset.body.species != null
+                            ? asset.body.species
+                            : species;
+                    String bodyFamily = asset.body != null ? asset.body.family : "quadruped_low";
+                    assemblies.add(new Assembly(
+                            name,
+                            asset.folder.toString().replace('\\', '/'),
+                            species,
+                            parts,
+                            bodyFamily
+                    ));
+                }
             }
         }
         return assemblies;

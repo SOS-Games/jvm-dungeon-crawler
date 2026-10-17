@@ -40,7 +40,8 @@ public class Converter {
 
     // velorenAssetPath should start with /assets
     public static void convertAsset(Path ronAbsolutePath, Path velorenAssetPath) {
-        if (ronAbsolutePath.getFileName().toString().equals("credits.ron")) {
+        if (ronAbsolutePath.getFileName().toString().equals("credits.ron")
+                || ronAbsolutePath.toString().contains("custom_assets")) {
             return;
         }
 
@@ -137,6 +138,7 @@ public class Converter {
         try {
             Files.walk(velorenAssetPath)
                 .filter(path -> path.toString().endsWith(".ron"))
+                .filter(path -> !path.toString().contains("custom_assets"))
                 .forEach(path -> ronAbsolutePaths.add(path));
 
             // also note these existing file types:

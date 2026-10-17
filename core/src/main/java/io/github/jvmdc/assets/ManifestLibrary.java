@@ -47,6 +47,10 @@ public final class ManifestLibrary {
                 }
             }
         }
+        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
+        for (AssetDef asset : registry.all().values()) {
+            library.entries.put(asset.id, asset.rawJson);
+        }
         return library;
     }
 

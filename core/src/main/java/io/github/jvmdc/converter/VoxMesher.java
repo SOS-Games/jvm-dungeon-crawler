@@ -75,6 +75,18 @@ public class VoxMesher {
     }
 
     public static VoxMesh build(VoxReader.VoxScene scene) {
+        return build(scene, null);
+    }
+
+    public static VoxMesh build(VoxReader.VoxScene scene, java.util.Map<Integer, int[]> paletteSwap) {
+        if (paletteSwap != null && !paletteSwap.isEmpty()) {
+            applyPaletteSwap(scene.palette, paletteSwap);
+            for (VoxReader.VoxModel model : scene.models) {
+                if (model.palette != null) {
+                    applyPaletteSwap(model.palette, paletteSwap);
+                }
+            }
+        }
         Builder builder = new Builder(scene.palette);
         for (VoxReader.VoxInstance instance : scene.instances) {
             if (instance.model < 0 || instance.model >= scene.models.size()) {
@@ -146,6 +158,25 @@ public class VoxMesher {
     public static VolumeMesh meshVolume(byte[] voxels, int sizeX, int sizeY, int sizeZ, int[] rgbaBySlot,
                                         int originX, int originY, int block, VoxelColor color) {
         return GreedyMesh.build(voxels, sizeX, sizeY, sizeZ, rgbaBySlot, originX, originY, block, color);
+    }
+
+    public static void applyPaletteSwap(int[] palette, java.util.Map<Integer, int[]> paletteSwap) {
+        if (palette == null || paletteSwap == null || paletteSwap.isEmpty()) {
+            return;
+        }
+        for (java.util.Map.Entry<Integer, int[]> entry : paletteSwap.entrySet()) {
+            int slot = entry.getKey();
+            if (slot >= 1 && slot <= palette.length) {
+                int[] rgb = entry.getValue();
+                if (rgb != null && rgb.length >= 3) {
+                    int r = rgb[0] & 0xFF;
+                    int g = rgb[1] & 0xFF;
+                    int b = rgb[2] & 0xFF;
+                    int a = rgb.length >= 4 ? (rgb[3] & 0xFF) : 0xFF;
+                    palette[slot - 1] = (r << 24) | (g << 16) | (b << 8) | a;
+                }
+            }
+        }
     }
 
     /** Colour at a point in the chunk, packed as red, green, blue. */
