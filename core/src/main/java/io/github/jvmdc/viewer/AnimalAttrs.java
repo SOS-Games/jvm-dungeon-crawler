@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Rest-pose numbers for each animal species. Idle motion reads these. */
-final class AnimalAttrs {
+public final class AnimalAttrs {
     private AnimalAttrs() {}
 
     // quadruped_small
@@ -292,19 +292,55 @@ final class AnimalAttrs {
 
     private static void put(String key, float[] value) { TABLE.put(key, value); }
 
-    /** speciesSex is "pig/male". Falls back to the species, then the first row. */
-    static float[] get(String family, String speciesSex) {
-        float[] row = TABLE.get(family + "/" + speciesSex);
-        if (row == null && speciesSex != null) {
-            int slash = speciesSex.indexOf('/');
-            if (slash > 0) row = TABLE.get(family + "/" + speciesSex.substring(0, slash));
+    public static void register(String family, String species, float[] poseRow) {
+        if (family != null && species != null && poseRow != null) {
+            TABLE.put((family + "/" + species).toLowerCase(), poseRow);
+        }
+    }
+
+    private static boolean customLoaded = false;
+    private static synchronized void loadCustomNpcAttrs() {
+        if (customLoaded) return;
+        customLoaded = true;
+        for (io.github.jvmdc.assets.AssetDef asset : io.github.jvmdc.assets.CustomAssetRegistry.getInstance().all().values()) {
+            if ("npc".equals(asset.category) && asset.body != null && asset.skeletonAttr != null) {
+                String family = asset.body.family;
+                String species = asset.body.species != null ? asset.body.species : asset.id;
+                if (family != null) {
+                    register(family, species, asset.skeletonAttr);
+                    if (asset.body.bodyType != null) {
+                        register(family, species + "/" + asset.body.bodyType, asset.skeletonAttr);
+                    }
+                }
+            }
+        }
+    }
+
+    /** speciesSex is "pig/male". Falls back to the species, then warns. */
+    public static float[] get(String family, String speciesSex) {
+        loadCustomNpcAttrs();
+        String familyLower = family != null ? family.toLowerCase() : "";
+        String speciesSexLower = speciesSex != null ? speciesSex.toLowerCase() : "";
+
+        float[] row = TABLE.get(familyLower + "/" + speciesSexLower);
+        if (row == null && !speciesSexLower.isEmpty()) {
+            int slash = speciesSexLower.indexOf('/');
+            if (slash > 0) {
+                row = TABLE.get(familyLower + "/" + speciesSexLower.substring(0, slash));
+            }
         }
         if (row == null) {
-            for (var e : TABLE.entrySet()) {
-                if (e.getKey().startsWith(family + "/")) return e.getValue();
-            }
+            logWarning("No pose row for " + family + "/" + speciesSex);
             return new float[0];
         }
         return row;
+    }
+
+    private static void logWarning(String message) {
+        if (com.badlogic.gdx.Gdx.app != null) {
+            com.badlogic.gdx.Gdx.app.log("AnimalAttrs", "WARNING: " + message);
+        } else {
+            System.err.println("[AnimalAttrs] WARNING: " + message);
+        }
     }
 }

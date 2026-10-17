@@ -1,6 +1,7 @@
 buildscript {
   repositories {
-    mavenCentral()
+    maven { url 'https://maven-central.storage-download.googleapis.com/maven2' }
+    maven { url 'https://jitpack.io' }
     gradlePluginPortal()
   }
 }
@@ -23,7 +24,8 @@ subprojects {
   version = "$projectVersion"
   ext.appName = 'jvm-dungeon-crawler'
   repositories {
-    mavenCentral()
+    maven { url 'https://maven-central.storage-download.googleapis.com/maven2' }
+    maven { url 'https://jitpack.io' }
   }
 }
 

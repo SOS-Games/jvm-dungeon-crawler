@@ -1,61 +1,36 @@
 package io.github.jvmdc.assets;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Turns a dotted model name into a .vox file. Custom names are read from the
- * custom folder. Every name is tried there first, then in the converted assets.
+ * Turns a model name into a file Path. Checked in custom_assets/ first,
+ * then in converted assets. Delegates to AssetResolver.
  */
 public final class ModelPaths {
-    private final AssetRoots roots;
+    private final AssetResolver resolver;
 
     public ModelPaths(AssetRoots roots) {
-        this.roots = roots;
+        this(new AssetResolver(roots));
+    }
+
+    public ModelPaths(AssetResolver resolver) {
+        this.resolver = resolver;
     }
 
     public static ModelPaths locate() {
-        return new ModelPaths(AssetRoots.locate());
+        return new ModelPaths(AssetResolver.locate());
     }
 
     /** First path that exists, if the file is on disk. */
     public Optional<Path> find(String specifier) {
-        for (Path candidate : candidates(specifier)) {
-            if (Files.isRegularFile(candidate)) {
-                return Optional.of(candidate);
-            }
-        }
-        return Optional.empty();
+        return resolver.find(specifier);
     }
 
     /** Preferred path, even when the file has not been copied yet. */
     public Path path(String specifier) {
-        List<Path> candidates = candidates(specifier);
-        return candidates.get(0);
-    }
-
-    private List<Path> candidates(String specifier) {
-        String dotted = specifier.startsWith("custom.") ? specifier.substring("custom.".length()) : specifier;
-        String relative = dotted.replace('.', '/') + ".vox";
-        String full = specifier.replace('.', '/') + ".vox";
-        List<Path> paths = new ArrayList<>();
-        if (specifier.startsWith("custom.")) {
-            paths.add(roots.custom.resolve(relative));
-        }
-        paths.add(roots.custom.resolve(full));
-        paths.add(roots.assets.resolve(full));
-        if (!full.equals(relative)) {
-            paths.add(roots.assets.resolve(relative));
-        }
-        if (roots.source != null) {
-            paths.add(roots.source.resolve(full));
-            if (!full.equals(relative)) {
-                paths.add(roots.source.resolve(relative));
-            }
-        }
-        return paths;
+        List<Path> candidates = resolver.candidates(specifier);
+        return candidates.isEmpty() ? resolver.roots().custom.resolve(specifier) : candidates.get(0);
     }
 }
