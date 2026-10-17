@@ -1,0 +1,460 @@
+{
+  "id": "npc.mimic",
+  "units": "voxels; 11 voxels = 1 tile; z up; model faces forward",
+  "body": {
+    "family": "quadruped_low",
+    "species": "Mimic",
+    "body_type": "Male"
+  },
+  "parts": [
+    {
+      "slot": "head_upper",
+      "offset": [
+        -7.5,
+        -0.5,
+        -1.0
+      ],
+      "file": "lid.vox",
+      "source_ref": "npc.mimic.lid",
+      "kind": "central"
+    },
+    {
+      "slot": "head_lower",
+      "offset": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "file": null,
+      "source_ref": "npc.mimic.empty",
+      "kind": "central"
+    },
+    {
+      "slot": "jaw",
+      "offset": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "file": null,
+      "source_ref": "npc.mimic.empty",
+      "kind": "central"
+    },
+    {
+      "slot": "chest",
+      "offset": [
+        -7.5,
+        -6.0,
+        0.0
+      ],
+      "file": "chest.vox",
+      "source_ref": "npc.mimic.chest",
+      "kind": "central"
+    },
+    {
+      "slot": "tail_front",
+      "offset": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "file": null,
+      "source_ref": "npc.mimic.empty",
+      "kind": "central"
+    },
+    {
+      "slot": "tail_rear",
+      "offset": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "file": null,
+      "source_ref": "npc.mimic.empty",
+      "kind": "central"
+    },
+    {
+      "slot": "front_left",
+      "offset": [
+        -1.0,
+        -1.0,
+        -2.0
+      ],
+      "file": "front_left.vox",
+      "source_ref": "npc.mimic.front_left",
+      "kind": "lateral",
+      "mirror": false
+    },
+    {
+      "slot": "front_right",
+      "offset": [
+        -1.0,
+        -1.0,
+        -2.0
+      ],
+      "file": "front_right.vox",
+      "source_ref": "npc.mimic.front_right",
+      "kind": "lateral",
+      "mirror": false
+    },
+    {
+      "slot": "back_left",
+      "offset": [
+        -1.0,
+        -1.0,
+        -2.0
+      ],
+      "file": "back_left.vox",
+      "source_ref": "npc.mimic.back_left",
+      "kind": "lateral",
+      "mirror": false
+    },
+    {
+      "slot": "back_right",
+      "offset": [
+        -1.0,
+        -1.0,
+        -2.0
+      ],
+      "file": "back_right.vox",
+      "source_ref": "npc.mimic.back_right",
+      "kind": "lateral",
+      "mirror": false
+    }
+  ],
+  "skeleton_attr": {
+    "head_upper": [
+      0,
+      0
+    ],
+    "head_lower": [
+      -5.5,
+      5
+    ],
+    "side_head_lower": [
+      0,
+      0,
+      0
+    ],
+    "side_head_upper": [
+      0,
+      0,
+      0
+    ],
+    "jaw": [
+      0,
+      0
+    ],
+    "chest": [
+      0,
+      2
+    ],
+    "tail_rear": [
+      0,
+      0
+    ],
+    "tail_rear_length": 0,
+    "tail_front": [
+      0,
+      0
+    ],
+    "feet_f": [
+      5.5,
+      4,
+      0
+    ],
+    "feet_b": [
+      5.5,
+      -4,
+      0
+    ],
+    "lean": [
+      0,
+      0
+    ],
+    "scaler": 1.0,
+    "tempo": 1.0,
+    "_flat_array_used_in_test": [
+      0,
+      0,
+      -5.5,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5.5,
+      4,
+      0,
+      5.5,
+      -4,
+      0,
+      0,
+      0,
+      1,
+      1
+    ]
+  },
+  "palette": {
+    "rules": {
+      "file_byte_minus_1_is_engine_index": true,
+      "shiny_bytes": [
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "glow_bytes": [
+        14,
+        15,
+        16
+      ],
+      "glow_used": [],
+      "hollow_byte": 17,
+      "hollow_used": false
+    },
+    "colors": {
+      "1": [
+        100,
+        70,
+        41
+      ],
+      "2": [
+        107,
+        75,
+        44
+      ],
+      "3": [
+        113,
+        79,
+        46
+      ],
+      "4": [
+        120,
+        84,
+        49
+      ],
+      "5": [
+        60,
+        45,
+        31
+      ],
+      "6": [
+        66,
+        49,
+        34
+      ],
+      "7": [
+        71,
+        54,
+        37
+      ],
+      "8": [
+        36,
+        30,
+        24
+      ],
+      "9": [
+        231,
+        216,
+        209
+      ],
+      "10": [
+        192,
+        170,
+        158
+      ],
+      "11": [
+        94,
+        72,
+        49
+      ],
+      "12": [
+        100,
+        76,
+        52
+      ],
+      "13": [
+        60,
+        50,
+        40
+      ],
+      "14": [
+        0,
+        0,
+        0
+      ],
+      "15": [
+        0,
+        0,
+        0
+      ],
+      "16": [
+        0,
+        0,
+        0
+      ],
+      "17": [
+        255,
+        0,
+        255
+      ],
+      "20": [
+        58,
+        22,
+        26
+      ]
+    }
+  },
+  "pivots": {
+    "lid_hinge": {
+      "parts": [
+        "lid",
+        "teeth_upper"
+      ],
+      "axis": "x",
+      "point_yz": [
+        11.5,
+        5.0
+      ],
+      "closed_deg": 0,
+      "open_deg": -65,
+      "note": "negative = lid tips back"
+    },
+    "legs": {
+      "parts": [
+        "legs"
+      ],
+      "note": "hidden while disguised; when shown, raise every other part by +2 z"
+    }
+  },
+  "states": {
+    "closed_disguised": {
+      "visible": [
+        "body",
+        "lid",
+        "teeth_upper",
+        "teeth_lower"
+      ],
+      "lid_deg": 0,
+      "legs": false,
+      "body_z": 0,
+      "preview": "mimic_closed.vox"
+    },
+    "open_snarl": {
+      "visible": [
+        "body",
+        "lid",
+        "teeth_upper",
+        "teeth_lower",
+        "legs"
+      ],
+      "lid_deg": -65,
+      "legs": true,
+      "body_z": 2,
+      "preview": "mimic_open.vox"
+    }
+  },
+  "source_build": {
+    "_note": "Original art-tool assembly (pre-split filenames, pre-rotation). Kept for reference; runtime uses 'parts'.",
+    "scale": "11 voxels = 1 block; z up; y=0 front (lock), y=11 back (hinge)",
+    "source": "body/lid shells follow a GPL-3.0 chest sprite layout (credit original authors); seam between z4 and z5",
+    "parts": [
+      {
+        "file": "mimic_body.vox",
+        "size": [
+          15,
+          12,
+          5
+        ],
+        "voxels": 590,
+        "offset": [
+          0,
+          0,
+          0
+        ],
+        "name": "body",
+        "note": "offset = position of the file origin in assembly voxels"
+      },
+      {
+        "file": "mimic_lid.vox",
+        "size": [
+          15,
+          12,
+          7
+        ],
+        "voxels": 838,
+        "offset": [
+          0,
+          0,
+          5
+        ],
+        "name": "lid",
+        "note": "offset = position of the file origin in assembly voxels"
+      },
+      {
+        "file": "mimic_teeth_upper.vox",
+        "size": [
+          11,
+          8,
+          2
+        ],
+        "voxels": 34,
+        "offset": [
+          2,
+          2,
+          4
+        ],
+        "name": "teeth_upper",
+        "note": "offset = position of the file origin in assembly voxels"
+      },
+      {
+        "file": "mimic_teeth_lower.vox",
+        "size": [
+          11,
+          8,
+          1
+        ],
+        "voxels": 17,
+        "offset": [
+          2,
+          2,
+          5
+        ],
+        "name": "teeth_lower",
+        "note": "offset = position of the file origin in assembly voxels"
+      },
+      {
+        "file": "mimic_legs.vox",
+        "size": [
+          13,
+          10,
+          2
+        ],
+        "voxels": 32,
+        "offset": [
+          1,
+          1,
+          -2
+        ],
+        "name": "legs",
+        "note": "offset = position of the file origin in assembly voxels"
+      }
+    ]
+  },
+  "license": "GPL-3.0",
+  "credit": "Built from scratch; footprint and colours matched to a Veloren chest sprite (GPL-3.0). Credit the Veloren contributors.",
+  "source": "Veloren"
+}

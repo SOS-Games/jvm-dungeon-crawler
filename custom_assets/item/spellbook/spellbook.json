@@ -1,0 +1,486 @@
+{
+  "id": "item.spellbook",
+  "units": "voxels; 11 voxels = 1 tile; z up; offsets/pivots/attach in model-local voxels",
+  "scale": 0.09090909090909091,
+  "parts": [
+    {
+      "model_id": "item.spellbook_plain",
+      "file": "spellbook_plain.vox",
+      "size": [
+        10,
+        13,
+        4
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.09090909090909091,
+      "note": "lies flat, spine along -x; drop offset z = size z",
+      "name": "plain",
+      "design": "plain",
+      "drop_offset_z": 4
+    },
+    {
+      "model_id": "item.spellbook_studded",
+      "file": "spellbook_studded.vox",
+      "size": [
+        10,
+        13,
+        5
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.09090909090909091,
+      "note": "lies flat, spine along -x; drop offset z = size z",
+      "name": "studded",
+      "design": "studded",
+      "drop_offset_z": 5
+    },
+    {
+      "model_id": "item.spellbook_clasp",
+      "file": "spellbook_clasp.vox",
+      "size": [
+        11,
+        13,
+        5
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.09090909090909091,
+      "note": "lies flat, spine along -x; drop offset z = size z",
+      "name": "clasp",
+      "design": "clasp",
+      "drop_offset_z": 5
+    }
+  ],
+  "designs": {
+    "plain": "item.spellbook_plain",
+    "studded": "item.spellbook_studded",
+    "clasp": "item.spellbook_clasp"
+  },
+  "appearance": {
+    "_note": "Appearance = design x palette. Recolour swaps only palette indices 1-3; 4-7 shared.",
+    "cover_indices": [
+      1,
+      2,
+      3
+    ],
+    "shared_colors": {
+      "4": [
+        215,
+        201,
+        166
+      ],
+      "5": [
+        166,
+        154,
+        128
+      ],
+      "6": [
+        142,
+        178,
+        195
+      ],
+      "7": [
+        113,
+        141,
+        156
+      ]
+    },
+    "palettes": {
+      "umber": {
+        "1": [
+          70,
+          47,
+          24
+        ],
+        "2": [
+          41,
+          35,
+          31
+        ],
+        "3": [
+          92,
+          54,
+          46
+        ]
+      },
+      "oak": {
+        "1": [
+          63,
+          41,
+          20
+        ],
+        "2": [
+          40,
+          25,
+          12
+        ],
+        "3": [
+          74,
+          49,
+          24
+        ]
+      },
+      "crimson": {
+        "1": [
+          114,
+          68,
+          57
+        ],
+        "2": [
+          72,
+          31,
+          25
+        ],
+        "3": [
+          178,
+          148,
+          123
+        ]
+      },
+      "amethyst": {
+        "1": [
+          105,
+          0,
+          211
+        ],
+        "2": [
+          102,
+          0,
+          204
+        ],
+        "3": [
+          198,
+          170,
+          255
+        ]
+      },
+      "azure": {
+        "1": [
+          79,
+          115,
+          231
+        ],
+        "2": [
+          14,
+          60,
+          75
+        ],
+        "3": [
+          147,
+          196,
+          255
+        ]
+      },
+      "teal": {
+        "1": [
+          51,
+          204,
+          153
+        ],
+        "2": [
+          14,
+          60,
+          75
+        ],
+        "3": [
+          51,
+          255,
+          255
+        ]
+      },
+      "slate": {
+        "1": [
+          92,
+          118,
+          128
+        ],
+        "2": [
+          82,
+          108,
+          117
+        ],
+        "3": [
+          97,
+          124,
+          134
+        ]
+      },
+      "sand": {
+        "1": [
+          122,
+          111,
+          90
+        ],
+        "2": [
+          90,
+          80,
+          65
+        ],
+        "3": [
+          139,
+          126,
+          103
+        ]
+      },
+      "gilded": {
+        "1": [
+          255,
+          182,
+          43
+        ],
+        "2": [
+          200,
+          123,
+          0
+        ],
+        "3": [
+          254,
+          216,
+          101
+        ]
+      },
+      "bone": {
+        "1": [
+          207,
+          194,
+          187
+        ],
+        "2": [
+          192,
+          170,
+          158
+        ],
+        "3": [
+          231,
+          216,
+          209
+        ]
+      }
+    },
+    "default": {
+      "design": "plain",
+      "palette": "umber"
+    },
+    "_low_contrast": [
+      "slate",
+      "sand"
+    ],
+    "_very_bright": [
+      "teal",
+      "gilded"
+    ]
+  },
+  "palette": {
+    "cover_indices": [
+      1,
+      2,
+      3
+    ],
+    "shared_colors": {
+      "4": [
+        215,
+        201,
+        166
+      ],
+      "5": [
+        166,
+        154,
+        128
+      ],
+      "6": [
+        142,
+        178,
+        195
+      ],
+      "7": [
+        113,
+        141,
+        156
+      ]
+    },
+    "cover_palettes": {
+      "umber": {
+        "1": [
+          70,
+          47,
+          24
+        ],
+        "2": [
+          41,
+          35,
+          31
+        ],
+        "3": [
+          92,
+          54,
+          46
+        ]
+      },
+      "oak": {
+        "1": [
+          63,
+          41,
+          20
+        ],
+        "2": [
+          40,
+          25,
+          12
+        ],
+        "3": [
+          74,
+          49,
+          24
+        ]
+      },
+      "crimson": {
+        "1": [
+          114,
+          68,
+          57
+        ],
+        "2": [
+          72,
+          31,
+          25
+        ],
+        "3": [
+          178,
+          148,
+          123
+        ]
+      },
+      "amethyst": {
+        "1": [
+          105,
+          0,
+          211
+        ],
+        "2": [
+          102,
+          0,
+          204
+        ],
+        "3": [
+          198,
+          170,
+          255
+        ]
+      },
+      "azure": {
+        "1": [
+          79,
+          115,
+          231
+        ],
+        "2": [
+          14,
+          60,
+          75
+        ],
+        "3": [
+          147,
+          196,
+          255
+        ]
+      },
+      "teal": {
+        "1": [
+          51,
+          204,
+          153
+        ],
+        "2": [
+          14,
+          60,
+          75
+        ],
+        "3": [
+          51,
+          255,
+          255
+        ]
+      },
+      "slate": {
+        "1": [
+          92,
+          118,
+          128
+        ],
+        "2": [
+          82,
+          108,
+          117
+        ],
+        "3": [
+          97,
+          124,
+          134
+        ]
+      },
+      "sand": {
+        "1": [
+          122,
+          111,
+          90
+        ],
+        "2": [
+          90,
+          80,
+          65
+        ],
+        "3": [
+          139,
+          126,
+          103
+        ]
+      },
+      "gilded": {
+        "1": [
+          255,
+          182,
+          43
+        ],
+        "2": [
+          200,
+          123,
+          0
+        ],
+        "3": [
+          254,
+          216,
+          101
+        ]
+      },
+      "bone": {
+        "1": [
+          207,
+          194,
+          187
+        ],
+        "2": [
+          192,
+          170,
+          158
+        ],
+        "3": [
+          231,
+          216,
+          209
+        ]
+      }
+    }
+  },
+  "license": "project original",
+  "credit": "Original model made for this project; no third-party source."
+}

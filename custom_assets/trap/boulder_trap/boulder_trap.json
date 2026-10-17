@@ -1,0 +1,68 @@
+{
+  "id": "trap.boulder_trap",
+  "units": "voxels; 11 voxels = 1 tile; z up; offsets/pivots/attach in model-local voxels",
+  "scale": 0.09090909090909091,
+  "source_model_id": "trap.boulder_round",
+  "parts": [
+    {
+      "model_id": "trap.boulder_round",
+      "file": "boulder_round.vox",
+      "size": [
+        23,
+        23,
+        23
+      ],
+      "offset": [
+        -11.5,
+        -11.5,
+        0
+      ],
+      "scale": 0.09090909090909091,
+      "pivot": [
+        11.5,
+        11.5,
+        11.5
+      ],
+      "note": "about 2 tiles wide; roll about the centre",
+      "name": "main",
+      "at": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "placeable": {
+    "type": "trap",
+    "footprint": [
+      1,
+      1
+    ],
+    "blocks_movement": true,
+    "blocks_sight": true,
+    "interactable": null,
+    "states": [
+      "resting",
+      "rolling"
+    ],
+    "placement": "spawned",
+    "trap": {
+      "_placeholder": true,
+      "trigger": {
+        "on": "linked"
+      },
+      "effect": "rolling_crush",
+      "damage": {
+        "amount": 30,
+        "type": "crush"
+      },
+      "reset": {
+        "mode": "none"
+      },
+      "speed_tiles_s": 4
+    },
+    "_note": "Values marked _placeholder are guesses to be tuned."
+  },
+  "license": "project original",
+  "credit": "Original model made for this project; no third-party source."
+}

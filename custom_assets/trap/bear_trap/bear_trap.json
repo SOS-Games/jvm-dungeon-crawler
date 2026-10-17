@@ -1,0 +1,67 @@
+{
+  "id": "trap.bear_trap",
+  "units": "voxels; 11 voxels = 1 tile; z up; offsets/pivots/attach in model-local voxels",
+  "scale": 0.09090909090909091,
+  "source_model_id": "trap.beartrap_closed",
+  "parts": [
+    {
+      "model_id": "trap.beartrap_closed",
+      "file": "beartrap_closed.vox",
+      "size": [
+        9,
+        5,
+        4
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.09090909090909091,
+      "name": "main",
+      "at": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "placeable": {
+    "type": "trap",
+    "footprint": [
+      1,
+      1
+    ],
+    "blocks_movement": false,
+    "blocks_sight": false,
+    "interactable": {
+      "verb": "disarm",
+      "skill": "trap_disarm"
+    },
+    "states": [
+      "armed",
+      "sprung"
+    ],
+    "placement": "floor",
+    "hidden": true,
+    "note": "armed state needs open-jaw model (stand-in from base assets)",
+    "trap": {
+      "_placeholder": true,
+      "trigger": {
+        "on": "step"
+      },
+      "effect": "root_and_damage",
+      "damage": {
+        "amount": 10,
+        "type": "pierce"
+      },
+      "reset": {
+        "mode": "manual"
+      },
+      "root_s": 3.0
+    },
+    "_note": "Values marked _placeholder are guesses to be tuned."
+  },
+  "license": "project original",
+  "credit": "Original model made for this project; no third-party source."
+}
