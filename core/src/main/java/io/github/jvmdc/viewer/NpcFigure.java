@@ -23,8 +23,8 @@ import java.util.Set;
  * NPCs and animals are stored as separate voxel parts. The converted manifests
  * say which file each bone uses, and the idle pose stacks those bones into one body.
  */
-final class NpcFigure {
-    static final class Part {
+public final class NpcFigure {
+    public static final class Part {
         final Path file;
         final float ox, oy, oz;
         final boolean mirror;
@@ -58,15 +58,15 @@ final class NpcFigure {
         }
     }
 
-    static final class Assembly {
-        final String name;
-        final String path;
-        final String species;
+    public static final class Assembly {
+        public final String name;
+        public final String path;
+        public final String species;
         /** Body family such as bird_medium or biped_small. Null when this figure stays still. */
-        final String body;
-        final List<Part> parts;
+        public final String body;
+        public final List<Part> parts;
 
-        Assembly(String name, String path, String species, List<Part> parts, String body) {
+        public Assembly(String name, String path, String species, List<Part> parts, String body) {
             this.name = name;
             this.path = path;
             this.species = species;
@@ -90,7 +90,7 @@ final class NpcFigure {
     private NpcFigure() {
     }
 
-    static List<Assembly> find(Path assetsRoot) throws IOException {
+    public static List<Assembly> find(Path assetsRoot) throws IOException {
         Map<String, List<Part>> grouped = new LinkedHashMap<>();
         Map<String, String> itemToFolder = new LinkedHashMap<>();
         for (String[] manifest : MANIFESTS) {
@@ -277,7 +277,7 @@ final class NpcFigure {
      * Bears, birds, fish, and the other animals. Same manifests as the big bipeds,
      * with a left-side mirror where the mesh file is the right limb flipped.
      */
-    private static List<Assembly> animals(Path assetsRoot) throws IOException {
+    public static List<Assembly> animals(Path assetsRoot) throws IOException {
         String[][] manifests = {
                 {"quadruped_medium_central_manifest.json", "quadruped_medium_lateral_manifest.json", "qm"},
                 {"quadruped_small_central_manifest.json", "quadruped_small_lateral_manifest.json", "qs"},
@@ -329,12 +329,15 @@ final class NpcFigure {
                         rust.toLowerCase() + "/" + sex, parts, family));
             }
         }
-        CustomAssetRegistry registry = CustomAssetRegistry.getInstance();
+        AssetRoots roots = assetsRoot != null
+                ? new AssetRoots(assetsRoot, assetsRoot.resolve("assets"), assetsRoot.resolve("custom_assets"), null)
+                : AssetRoots.locate();
+        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
         for (AssetDef asset : registry.all().values()) {
-            if ("npc".equals(asset.category) || asset.body != null) {
+            if ("npc".equals(asset.category)) {
                 List<Part> parts = new ArrayList<>();
                 for (AssetDef.PartDef pDef : asset.parts) {
-                    if (pDef.resolvedPath != null && Files.isRegularFile(pDef.resolvedPath)) {
+                    if (pDef.file != null && pDef.resolvedPath != null && Files.isRegularFile(pDef.resolvedPath)) {
                         parts.add(new Part(
                                 pDef.resolvedPath,
                                 pDef.offset[0], pDef.offset[1], pDef.offset[2],

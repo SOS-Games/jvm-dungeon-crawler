@@ -1,0 +1,52 @@
+{
+  "wall": {
+    "base": [100, 100, 100],
+    "range": 12,
+    "edge": 4
+  },
+  "room_floor": {
+    "base": [120, 110, 100],
+    "range": 12,
+    "edge": 2
+  },
+  "corridor": {
+    "base": [110, 100, 90],
+    "range": 12,
+    "edge": 2
+  },
+  "ground": {
+    "base": [90, 80, 70],
+    "range": 12,
+    "edge": 2
+  },
+  "rock": {
+    "base": [80, 80, 80],
+    "range": 12,
+    "edge": 4
+  },
+  "ceiling": {
+    "base": [70, 70, 70],
+    "range": 12,
+    "edge": 2
+  },
+  "water": {
+    "base": [30, 80, 120],
+    "range": 12,
+    "edge": 2
+  },
+  "deep_water": {
+    "base": [10, 50, 90],
+    "range": 12,
+    "edge": 2
+  },
+  "lava": {
+    "base": [200, 60, 20],
+    "range": 12,
+    "edge": 2
+  },
+  "pit": {
+    "base": [20, 20, 20],
+    "range": 12,
+    "edge": 2
+  }
+}

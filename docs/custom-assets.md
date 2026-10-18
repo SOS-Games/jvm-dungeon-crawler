@@ -1,38 +1,101 @@
-# Custom Voxel Assets
+# Custom Assets System
 
-## Overview
-Custom voxel assets live under the `custom_assets/` directory at the project root. Every asset lives in its own subfolder, containing exactly one JSON definition file named after the folder, plus its referenced `.vox` model parts:
+This document describes the layout, loading runtime, and JSON field specification for custom assets in the project.
+
+## Folder Layout
+
+Custom assets are located in the `custom_assets/` folder at the repository root. Each asset resides in its own subfolder grouped by category:
 
 ```
-custom_assets/<category>/<asset>/<asset>.json
-custom_assets/<category>/<asset>/*.vox
+custom_assets/
+├── item/
+│   └── spellbook/
+│       ├── spellbook.json
+│       ├── spellbook_plain.vox
+│       ├── spellbook_studded.vox
+│       └── spellbook_clasp.vox
+├── npc/
+│   └── mimic/
+│       ├── mimic.json
+│       ├── chest.vox
+│       ├── lid.vox
+│       ├── front_left.vox
+│       ├── front_right.vox
+│       ├── back_left.vox
+│       └── back_right.vox
+├── placement/
+│   └── altar/
+│       ├── altar.json
+│       └── altar.vox
+└── trap/
+    └── lever/
+        ├── lever.json
+        ├── lever_base.vox
+        └── lever_handle.vox
 ```
 
-Supported categories include `item/`, `npc/`, `placement/`, and `trap/`.
+Every asset folder contains exactly one JSON definition named after the folder (e.g. `<folder>.json`), alongside all referenced `.vox` voxel files. Relative paths in the asset JSON are resolved relative to that asset's directory.
 
-## Directory Scanning and Resolution Rules
-1. **Scanning:** At startup, `CustomAssetRegistry` scans `custom_assets/*/*/<folder>.json` for definition files matching `<folder>/<folder>.json`.
-2. **Precedence:** Custom asset IDs (e.g. `trap.lever` or `npc.mimic`) take precedence over converted base asset IDs with the same key.
-3. **Relative Paths:** All `.vox` model references declared inside an asset's JSON definition are resolved relative to that asset's parent folder.
-4. **Resilience:** Malformed or corrupt JSON files are logged with warnings and skipped rather than crashing the application.
+---
 
-## Schema
-An asset JSON definition includes the following primary sections:
+## Asset Overrides & Resolution
 
-- `id`: Fully-qualified identifier (e.g. `trap.lever`, `npc.mimic`). Defaults to `<category>.<folder>`.
-- `scale` & `units`: Scale factor (typically `0.09090909090909091`, representing 11 voxels per tile, Z up).
-- `parts`: List of `.vox` model parts. Each part specifies its filename, offset, pivot, joint transforms, mirror flag, and optional per-state visibility.
-- `placeable`: Gameplay and placement properties (footprint, interaction verbs, states, trap/light data).
-- `palette`: Color definitions and named palette overrides (`cover_palettes` or `palettes`).
-- `body` & `skeleton_attr`: NPC character family, species, body type, and rest-pose row numbers.
-- `pivots` & `states`: Pivot points and state definitions (e.g., `closed_disguised` vs `open_snarl`).
-- `license`, `credit`, `source`: License and attribution information.
+1. **Resolution Precedence**: `AssetResolver` checks `custom_assets/` first before falling back to converted Veloren assets.
+2. **Registry Overrides**: At startup, `CustomAssetRegistry` scans all asset definitions under `custom_assets/*/*/<folder>.json`. Custom IDs replace base/Veloren IDs with the same name.
+3. **Error Handling**: Malformed or unparseable JSON files are logged and skipped rather than causing startup crashes.
 
-## Per-State Part Visibility
-Parts can define state-dependent visibility. A part can be marked as hidden in specific states (e.g. mimic legs hidden when in state `closed_disguised`). When building or meshing a model for an active state, hidden parts are filtered out.
+---
 
-## Palette Swaps
-An asset can define named palettes (e.g. cover colors for spellbooks like `umber`, `crimson`, `oak`, `azure`). A named palette overrides specific 1-based palette indices in the model's `.vox` palette array before `VoxMesher` builds the mesh.
+## JSON Field Specification
 
-## Animal Pose Rows
-NPC species pose rows are loaded from the asset's `skeleton_attr` into `AnimalAttrs`. If a requested species pose row is not found, `AnimalAttrs` logs a warning and returns an empty row rather than silently falling back to another species.
+An `AssetDef` JSON file supports the following top-level and nested fields:
+
+### Top-Level Fields
+
+- **`id`** (`string`): Dotted asset ID (e.g., `"trap.lever"`, `"npc.mimic"`).
+- **`scale`** (`number`): Scale multiplier for world units (default: `1/11` or `0.090909...`).
+- **`units`** (`string`, optional): Human-readable unit description (e.g., `"voxels; 11 voxels = 1 tile"`).
+- **`body`** (`object`, optional):
+  - **`family`**: Body skeleton family (`"quadruped_low"`, `"biped_small"`, `"character"`, etc.).
+  - **`species`**: Species identifier (`"Mimic"`).
+  - **`body_type`**: Variant or gender (`"Male"`).
+- **`parts`** (`array` of objects): Voxel model components (see below).
+- **`palette`** / **`appearance`** (`object`, optional): Palette definitions and color swaps.
+- **`placeable`** (`object`, optional): Gameplay placement data (`type`, `footprint`, `blocks_movement`, `blocks_sight`, `interactable`, `states`, `placement`, `light`).
+- **`skeleton_attr`** (`object` or `array`, optional): Skeleton rest-pose values registered into `AnimalAttrs`.
+- **`license`** / **`credit`** / **`source`** (`string`): Legal license and attribution fields.
+
+### Part Fields (`parts` Array)
+
+Each element in `parts` defines a voxel mesh part:
+
+- **`name`** (`string`): Internal part name (e.g., `"lever_base"`, `"handle"`, `"lid"`).
+- **`file`** (`string` or `null`): Filename of the `.vox` asset relative to the asset folder (e.g., `"lever_base.vox"`). Parts with `file: null` are skipped.
+- **`model_id`** (`string`, optional): Unique identifier for looking up this part mesh.
+- **`size`** (`[x, y, z]`): Voxel dimensions.
+- **`offset`** (`[x, y, z]`): Mesh origin offset relative to assembly.
+- **`pivot`** (`[x, y, z]`, optional): Rotation pivot in local voxel coordinates.
+- **`at`** (`[x, y, z]`, optional): Attachment vector.
+- **`slot`** (`string`, optional): NPC bone slot (e.g., `"head_upper"`, `"chest"`, `"front_left"`).
+- **`hidden_in`** / **`hidden_states`** (`array` of strings, optional): List of state names in which this part is hidden (e.g., `["closed_disguised"]`).
+- **`joint`** (`object`, optional):
+  - **`type`**: Kinematic joint type (`"rotate"`, `"translate"`, `"spin"`).
+  - **`axis`**: `[x, y, z]` rotation/translation axis.
+  - **`deg_per_sec`**: Continuous rotation speed for spin joints.
+  - **`states`**: Map of state names to rotation angles (`number`) or translation vectors (`[x, y, z]`).
+
+---
+
+## Features
+
+### Per-State Part Visibility
+
+Parts specify state names in `hidden_in`. When an asset or rig is posed in that state (e.g., Mimic in `"closed_disguised"`), matching parts are hidden during meshing/rendering.
+
+### Palette Swapping
+
+An asset can define named color palettes in `palette.cover_palettes` or `appearance.palettes`. Overridden palette indices (e.g., indices 1–3 for spellbook covers) are applied before `VoxMesher` generates meshes.
+
+### Animal Pose Rows
+
+NPC species defined in custom asset JSON files register their `skeleton_attr` rows into `AnimalAttrs`. If a species is missing, a warning is logged rather than silently falling back to another species' pose row.

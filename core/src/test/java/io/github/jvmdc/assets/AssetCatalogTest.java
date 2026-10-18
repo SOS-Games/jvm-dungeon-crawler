@@ -57,6 +57,9 @@ class AssetCatalogTest {
         ManifestLibrary library = ManifestLibrary.load(roots);
         JsonValue lever = library.get("trap.lever");
         assertNotNull(lever, "Custom asset trap.lever should be loaded in library");
-        assertTrue(ModelPaths.locate().find("trap.lever").isPresent());
+
+        var voxPath = ModelPaths.locate().find("trap.lever_base");
+        assertTrue(voxPath.isPresent(), "Model trap.lever_base should resolve to a file");
+        assertTrue(voxPath.get().toString().endsWith(".vox"), "Resolved model file must end with .vox: " + voxPath.get());
     }
 }

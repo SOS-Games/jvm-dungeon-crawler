@@ -30,7 +30,7 @@ public final class MonsterTable {
     }
 
     public static MonsterTable load() throws IOException {
-        Path file = AssetRoots.locate().custom.resolve("manifest").resolve("monsters.json");
+        Path file = AssetRoots.locate().repo.resolve("game_data").resolve("monsters.json");
         try (InputStream in = Files.newInputStream(file)) {
             return parse(new JsonReader().parse(in));
         }

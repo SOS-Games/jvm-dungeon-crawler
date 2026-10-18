@@ -60,6 +60,8 @@ public final class AnimalIdle {
         alias("quadruped_low", "lower", "head_c_lower");
         alias("quadruped_low", "upper", "head_c_upper");
         alias("quadruped_low", "jaw", "jaw_c");
+        alias("quadruped_low", "head_upper", "head_c_upper");
+        alias("quadruped_low", "head_lower", "head_c_lower");
         alias("quadruped_low", "left_lower", "head_l_lower");
         alias("quadruped_low", "left_upper", "head_l_upper");
         alias("quadruped_low", "left_jaw", "jaw_l");

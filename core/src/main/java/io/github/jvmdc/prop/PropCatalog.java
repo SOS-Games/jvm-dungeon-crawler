@@ -1,16 +1,15 @@
 package io.github.jvmdc.prop;
 
-import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import io.github.jvmdc.assets.AssetDef;
 import io.github.jvmdc.assets.AssetRoots;
+import io.github.jvmdc.assets.CustomAssetRegistry;
 import io.github.jvmdc.assets.ManifestLibrary;
 import io.github.jvmdc.assets.ModelPaths;
 import io.github.jvmdc.converter.VoxReader;
 import io.github.jvmdc.world.BlockChunks;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,7 +18,7 @@ import java.util.Map;
 
 /**
  * Custom models, multi-part rigs, and placeable gameplay data.
- * A rig and a solid model may share a name; both are kept.
+ * Populated from CustomAssetRegistry.
  */
 public final class PropCatalog {
     public final Map<String, ModelDef> models = new LinkedHashMap<>();
@@ -34,11 +33,121 @@ public final class PropCatalog {
     public static PropCatalog load(AssetRoots roots) throws IOException {
         ManifestLibrary library = ManifestLibrary.load(roots);
         PropCatalog catalog = new PropCatalog(library);
-        Path manifest = roots.custom.resolve("manifest");
-        catalog.readModels(manifest.resolve("models.json"));
-        catalog.readPlaceables(manifest.resolve("placeables.json"));
+
+        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
+        for (AssetDef asset : registry.all().values()) {
+            catalog.absorbAsset(asset);
+        }
+
         catalog.addSprites();
         return catalog;
+    }
+
+    private void absorbAsset(AssetDef asset) {
+        String leafName = asset.id.contains(".")
+                ? asset.id.substring(asset.id.lastIndexOf('.') + 1)
+                : asset.id;
+
+        // Models
+        for (AssetDef.PartDef p : asset.parts) {
+            ModelDef m = new ModelDef();
+            m.id = p.modelId != null ? p.modelId : (asset.id + "." + p.name);
+            m.vox = p.modelId != null ? ("custom.voxel." + p.modelId) : ("custom.voxel." + asset.id);
+            if (p.size != null) {
+                m.sx = p.size[0];
+                m.sy = p.size[1];
+                m.sz = p.size[2];
+            }
+            if (p.offset != null) {
+                m.ox = p.offset[0];
+                m.oy = p.offset[1];
+                m.oz = p.offset[2];
+            }
+            if (p.pivot != null) {
+                m.px = p.pivot[0];
+                m.py = p.pivot[1];
+                m.pz = p.pivot[2];
+                m.hasPivot = true;
+            }
+            models.put(m.id, m);
+            if (p.name != null) {
+                models.put(asset.id + "." + p.name, m);
+                models.put(leafName + "." + p.name, m);
+            }
+        }
+
+        // Rig
+        if (asset.parts.size() >= 2) {
+            RigDef rig = new RigDef();
+            rig.id = asset.id;
+            for (AssetDef.PartDef p : asset.parts) {
+                RigPart part = new RigPart();
+                part.model = p.modelId != null ? p.modelId : (asset.id + "." + p.name);
+                if (p.at != null) {
+                    part.ax = p.at[0];
+                    part.ay = p.at[1];
+                    part.az = p.at[2];
+                }
+                if (p.joint != null) {
+                    part.joint = p.joint.type != null ? p.joint.type : "";
+                    part.degPerSec = p.joint.degPerSec;
+                    if (p.joint.axis != null) {
+                        part.axisX = p.joint.axis[0];
+                        part.axisY = p.joint.axis[1];
+                        part.axisZ = p.joint.axis[2];
+                    }
+                    for (Map.Entry<String, float[]> st : p.joint.states.entrySet()) {
+                        part.states.put(st.getKey(), st.getValue());
+                    }
+                }
+                part.hiddenIn.addAll(p.hiddenIn);
+                rig.parts.add(part);
+            }
+            rigs.put(asset.id, rig);
+            rigs.put(leafName, rig);
+            if ("trap.spike_trap".equals(asset.id)) {
+                rigs.put("trap.spikes", rig);
+                rigs.put("spikes", rig);
+            }
+        }
+
+        // Placeable
+        if (asset.gameplayData != null) {
+            PlaceableDef def = parsePlaceable(leafName, asset.id, asset.gameplayData);
+            placeables.put(asset.id, def);
+            placeables.put(leafName, def);
+        }
+    }
+
+    private static PlaceableDef parsePlaceable(String id, String model, JsonValue node) {
+        PlaceableDef def = new PlaceableDef();
+        def.id = id;
+        def.model = model;
+        def.blocksMovement = node.getBoolean("blocks_movement", false);
+        def.blocksSight = node.getBoolean("blocks_sight", false);
+        String where = node.getString("placement", "floor");
+        def.wall = "wall".equals(where) || "wall_face".equals(where);
+        def.placement = where;
+        JsonValue states = node.get("states");
+        if (states != null && states.child != null && states.child.isString()) {
+            def.state = states.child.asString();
+        }
+        JsonValue interact = node.get("interactable");
+        if (interact != null && interact.isObject()) {
+            def.verb = interact.getString("verb", "");
+        }
+        JsonValue light = node.get("light");
+        if (light != null && light.isObject()) {
+            def.light = true;
+            JsonValue color = light.get("color");
+            if (color != null && color.size >= 3) {
+                def.lightR = color.getFloat(0) / 255f * 8f;
+                def.lightG = color.getFloat(1) / 255f * 8f;
+                def.lightB = color.getFloat(2) / 255f * 8f;
+            }
+            def.lightRadius = light.getFloat("radius_tiles", 3f) * BlockChunks.VOXELS_PER_TILE;
+        }
+        return def;
     }
 
     /** Voxels deep along the axis that points out from a wall. */
@@ -72,37 +181,14 @@ public final class PropCatalog {
             return model.vox;
         }
         String specifier = library.specifier(modelId);
+        if (specifier == null || specifier.isEmpty()) {
+            if ("Door".equals(modelId)) return "voxygen.voxel.sprite.door.door-0";
+            if ("Chest".equals(modelId)) return "voxygen.voxel.sprite.chest.chest-0";
+            if ("WallSconce".equals(modelId)) return "voxygen.voxel.sprite.sconce.sconce-0";
+        }
         return specifier == null ? "" : specifier;
     }
 
-    private void readModels(Path file) throws IOException {
-        JsonValue root = read(file);
-        JsonValue modelsNode = root.get("models");
-        if (modelsNode != null) {
-            for (JsonValue child = modelsNode.child; child != null; child = child.next) {
-                models.put(child.name, model(child));
-            }
-        }
-        JsonValue rigsNode = root.get("rigs");
-        if (rigsNode != null) {
-            for (JsonValue child = rigsNode.child; child != null; child = child.next) {
-                rigs.put(child.name, rig(child));
-            }
-        }
-    }
-
-    private void readPlaceables(Path file) throws IOException {
-        JsonValue root = read(file);
-        JsonValue list = root.get("placeables");
-        if (list == null) {
-            return;
-        }
-        for (JsonValue child = list.child; child != null; child = child.next) {
-            placeables.put(child.name, placeable(child));
-        }
-    }
-
-    /** Doors, chests, and torches live in the converted manifests, not the placeable list. */
     private void addSprites() {
         placeables.put("chest", sprite("chest", "Chest", true, false, "open", false));
         placeables.put("torch", lightSprite("torch", "WallSconce", false, true, 4f, 8f, 4.2f, 1.4f));
@@ -144,123 +230,6 @@ public final class PropCatalog {
         return def;
     }
 
-    private static ModelDef model(JsonValue node) {
-        ModelDef model = new ModelDef();
-        model.id = node.name;
-        model.vox = node.getString("vox", "");
-        float[] size = vec(node.get("size"), 1f);
-        model.sx = size[0];
-        model.sy = size[1];
-        model.sz = size[2];
-        float[] offset = vec(node.get("offset"), 0f);
-        model.ox = offset[0];
-        model.oy = offset[1];
-        model.oz = offset[2];
-        JsonValue pivot = node.get("pivot");
-        if (pivot != null && pivot.isArray()) {
-            float[] p = vec(pivot, 0f);
-            model.px = p[0];
-            model.py = p[1];
-            model.pz = p[2];
-            model.hasPivot = true;
-        }
-        return model;
-    }
-
-    private static RigDef rig(JsonValue node) {
-        RigDef rig = new RigDef();
-        rig.id = node.name;
-        JsonValue parts = node.get("parts");
-        if (parts != null) {
-            for (JsonValue child = parts.child; child != null; child = child.next) {
-                rig.parts.add(part(child));
-            }
-        }
-        return rig;
-    }
-
-    private static RigPart part(JsonValue node) {
-        RigPart part = new RigPart();
-        part.model = node.getString("model", "");
-        float[] at = vec(node.get("at"), 0f);
-        part.ax = at[0];
-        part.ay = at[1];
-        part.az = at[2];
-        JsonValue joint = node.get("joint");
-        if (joint != null && joint.isObject()) {
-            part.joint = joint.getString("type", "");
-            float[] axis = vec(joint.get("axis"), 0f);
-            if (joint.get("axis") == null) {
-                axis[2] = 1f;
-            }
-            part.axisX = axis[0];
-            part.axisY = axis[1];
-            part.axisZ = axis[2];
-            JsonValue states = joint.get("states");
-            if (states != null) {
-                for (JsonValue state = states.child; state != null; state = state.next) {
-                    if (state.isArray()) {
-                        part.states.put(state.name, vec(state, 0f));
-                    } else if (state.isNumber()) {
-                        part.states.put(state.name, new float[] {state.asFloat()});
-                    }
-                }
-            }
-        }
-        return part;
-    }
-
-    private static PlaceableDef placeable(JsonValue node) {
-        PlaceableDef def = new PlaceableDef();
-        def.id = node.name;
-        def.model = node.getString("model", "");
-        def.blocksMovement = node.getBoolean("blocks_movement", false);
-        def.blocksSight = node.getBoolean("blocks_sight", false);
-        String where = node.getString("placement", "floor");
-        def.wall = "wall".equals(where) || "wall_face".equals(where);
-        def.placement = where;
-        JsonValue states = node.get("states");
-        if (states != null && states.child != null && states.child.isString()) {
-            def.state = states.child.asString();
-        }
-        JsonValue interact = node.get("interactable");
-        if (interact != null && interact.isObject()) {
-            def.verb = interact.getString("verb", "");
-        }
-        JsonValue light = node.get("light");
-        if (light != null && light.isObject()) {
-            def.light = true;
-            JsonValue color = light.get("color");
-            if (color != null && color.size >= 3) {
-                def.lightR = color.getFloat(0) / 255f * 8f;
-                def.lightG = color.getFloat(1) / 255f * 8f;
-                def.lightB = color.getFloat(2) / 255f * 8f;
-            }
-            def.lightRadius = light.getFloat("radius_tiles", 3f) * BlockChunks.VOXELS_PER_TILE;
-        }
-        return def;
-    }
-
-    private static float[] vec(JsonValue node, float fill) {
-        float[] out = {fill, fill, fill};
-        if (node == null || !node.isArray()) {
-            return out;
-        }
-        int i = 0;
-        for (JsonValue child = node.child; child != null && i < 3; child = child.next, i++) {
-            if (child.isNumber()) {
-                out[i] = child.asFloat();
-            }
-        }
-        return out;
-    }
-
-    private static JsonValue read(Path file) throws IOException {
-        try (InputStream in = Files.newInputStream(file)) {
-            return new JsonReader().parse(in);
-        }
-    }
-
     public static final class ModelDef {
         public String id = "";
         public String vox = "";
@@ -287,10 +256,12 @@ public final class PropCatalog {
         public float ay;
         public float az;
         public String joint = "";
+        public float degPerSec;
         public float axisX;
         public float axisY;
         public float axisZ = 1f;
         public final Map<String, float[]> states = new LinkedHashMap<>();
+        public final java.util.Set<String> hiddenIn = new java.util.HashSet<>();
     }
 
     public static final class PlaceableDef {
@@ -299,7 +270,6 @@ public final class PropCatalog {
         public boolean blocksMovement;
         public boolean blocksSight;
         public boolean wall;
-        /** floor, wall, or wall_face. Wall mounts use the facing as the outward normal. */
         public String placement = "floor";
         public String verb = "";
         public String state = "";

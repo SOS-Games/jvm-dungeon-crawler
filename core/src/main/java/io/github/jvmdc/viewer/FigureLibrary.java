@@ -11,11 +11,16 @@ public final class FigureLibrary {
     }
 
     public static boolean available(String species, String body) {
-        try {
-            return find(species, body) != null;
-        } catch (IOException e) {
+        if (species == null || species.isBlank()) {
             return false;
         }
+        try {
+            if (find(species, body) != null) {
+                return true;
+            }
+        } catch (IOException ignored) {
+        }
+        return AnimalAttrs.get(body, species).length > 0 || "biped_large".equals(body) || "biped_small".equals(body);
     }
 
     /** Idle clip when the body has one. The rig is ready to draw. */

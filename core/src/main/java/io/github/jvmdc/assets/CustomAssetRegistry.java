@@ -22,6 +22,7 @@ public final class CustomAssetRegistry {
     private static CustomAssetRegistry instance;
 
     private final Map<String, AssetDef> assets = new LinkedHashMap<>();
+    private final Map<String, Path> modelIdToVoxPath = new LinkedHashMap<>();
 
     public CustomAssetRegistry() {
     }
@@ -81,6 +82,18 @@ public final class CustomAssetRegistry {
         return Optional.ofNullable(assets.get(id));
     }
 
+    public Optional<Path> getVoxForModelId(String modelId) {
+        if (modelId == null) {
+            return Optional.empty();
+        }
+        String stripped = modelId.startsWith("custom.voxel.") ? modelId.substring("custom.voxel.".length()) : modelId;
+        Path path = modelIdToVoxPath.get(stripped);
+        if (path == null) {
+            path = modelIdToVoxPath.get(modelId);
+        }
+        return Optional.ofNullable(path);
+    }
+
     public boolean has(String id) {
         return assets.containsKey(id);
     }
@@ -118,8 +131,31 @@ public final class CustomAssetRegistry {
             // Licence / Credit / Source
             String licence = buildLicenceString(root);
 
-            // Palette
-            AssetDef.PaletteDef palette = parsePalette(root.get("palette"));
+            // Palette & Palette Set
+            String paletteSet = root.has("palette_set") ? root.getString("palette_set") : null;
+            JsonValue palNode = root.has("palette") ? root.get("palette") : root.get("appearance");
+            AssetDef.PaletteDef palette = parsePalette(palNode);
+            if (palette != null && root.has("appearance") && root.get("appearance").isObject() && root.get("appearance").has("palettes")) {
+                JsonValue appPals = root.get("appearance").get("palettes");
+                if (appPals != null && appPals.isObject()) {
+                    for (JsonValue nameNode = appPals.child; nameNode != null; nameNode = nameNode.next) {
+                        String pName = nameNode.name;
+                        Map<Integer, int[]> indexColors = new LinkedHashMap<>();
+                        if (nameNode.isObject()) {
+                            for (JsonValue idxNode = nameNode.child; idxNode != null; idxNode = idxNode.next) {
+                                try {
+                                    int idx = Integer.parseInt(idxNode.name);
+                                    if (idxNode.isArray() && idxNode.size >= 3) {
+                                        indexColors.put(idx, new int[]{idxNode.getInt(0), idxNode.getInt(1), idxNode.getInt(2)});
+                                    }
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                        }
+                        palette.namedPalettes.put(pName.toLowerCase(), indexColors);
+                    }
+                }
+            }
 
             // Skeleton Attr
             float[] skeletonAttr = parseSkeletonAttr(root.get("skeleton_attr"));
@@ -133,23 +169,59 @@ public final class CustomAssetRegistry {
             JsonValue removedBakedPreviews = root.get("removed_baked_previews");
 
             AssetDef def = new AssetDef(
-                    id, category, jsonFile, folder, scale, units, palette, gameplayData,
+                    id, category, jsonFile, folder, scale, units, palette, paletteSet, gameplayData,
                     licence, body, skeletonAttr, pivots, states, removedBakedPreviews, root
             );
 
-            // Parts
-            if (root.has("parts") && root.get("parts").isArray()) {
-                for (JsonValue p = root.get("parts").child; p != null; p = p.next) {
-                    AssetDef.PartDef part = parsePart(p, folder, states);
-                    if (part != null) {
-                        def.parts.add(part);
+            // Tone palettes in palette object (e.g. stone, wood, metal, water, candle, offering)
+            if (root.has("palette") && root.get("palette").isObject()) {
+                for (JsonValue child = root.get("palette").child; child != null; child = child.next) {
+                    if (child.isArray() || child.isObject()) {
+                        def.tonePalettes.put(child.name, child);
                     }
                 }
             }
 
-            // Attach points
-            if (root.has("attach") && root.get("attach").isObject()) {
-                for (JsonValue a = root.get("attach").child; a != null; a = a.next) {
+            // Parts
+            if (root.has("parts") && root.get("parts").isArray()) {
+                for (JsonValue p = root.get("parts").child; p != null; p = p.next) {
+                    AssetDef.PartDef part = parsePart(p, folder, states, scale);
+                    if (part != null) {
+                        def.parts.add(part);
+                        if (part.resolvedPath != null) {
+                            if (part.modelId != null) {
+                                modelIdToVoxPath.put(part.modelId, part.resolvedPath);
+                                modelIdToVoxPath.put("custom.voxel." + part.modelId, part.resolvedPath);
+                            }
+                            if (part.name != null) {
+                                modelIdToVoxPath.put(id + "." + part.name, part.resolvedPath);
+                                modelIdToVoxPath.put("custom.voxel." + id + "." + part.name, part.resolvedPath);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (root.has("source_model_id") && !def.parts.isEmpty()) {
+                for (AssetDef.PartDef p : def.parts) {
+                    if (p.resolvedPath != null) {
+                        modelIdToVoxPath.put(root.getString("source_model_id"), p.resolvedPath);
+                        break;
+                    }
+                }
+            }
+            if (!def.parts.isEmpty()) {
+                for (AssetDef.PartDef p : def.parts) {
+                    if (p.resolvedPath != null) {
+                        modelIdToVoxPath.putIfAbsent(id, p.resolvedPath);
+                        break;
+                    }
+                }
+            }
+
+            // Read placeable.attach (name -> [x,y,z])
+            if (gameplayData != null && gameplayData.has("attach") && gameplayData.get("attach").isObject()) {
+                for (JsonValue a = gameplayData.get("attach").child; a != null; a = a.next) {
                     if (a.isArray() && a.size >= 3) {
                         def.attachPoints.put(a.name, new float[]{a.getFloat(0), a.getFloat(1), a.getFloat(2)});
                     }
@@ -176,7 +248,7 @@ public final class CustomAssetRegistry {
         return sb.length() > 0 ? sb.toString() : "Unspecified";
     }
 
-    private static AssetDef.PartDef parsePart(JsonValue p, Path folder, JsonValue states) {
+    private static AssetDef.PartDef parsePart(JsonValue p, Path folder, JsonValue states, float assetScale) {
         if (p == null || !p.isObject()) {
             return null;
         }
@@ -206,11 +278,16 @@ public final class CustomAssetRegistry {
         boolean mirror = p.has("mirror") && p.getBoolean("mirror");
         String modelId = p.has("model_id") ? p.getString("model_id") : null;
 
+        float partScale = p.has("scale") ? p.getFloat("scale") : assetScale;
+        boolean emissive = p.has("emissive") && p.getBoolean("emissive");
+        String anim = p.has("anim") ? p.getString("anim") : null;
+
         // Joint
         AssetDef.JointDef joint = null;
         if (p.has("joint") && p.get("joint").isObject()) {
             JsonValue j = p.get("joint");
             String type = j.has("type") ? j.getString("type") : null;
+            float degPerSec = j.has("deg_per_sec") ? j.getFloat("deg_per_sec") : 0f;
             float[] axis = null;
             if (j.has("axis") && j.get("axis").isArray() && j.get("axis").size >= 3) {
                 JsonValue ax = j.get("axis");
@@ -229,21 +306,41 @@ public final class CustomAssetRegistry {
                         hg.get(2).isNull() ? 0f : hg.getFloat(2)
                 };
             }
-            joint = new AssetDef.JointDef(type, axis, hinge);
+            joint = new AssetDef.JointDef(type, axis, hinge, degPerSec);
             if (j.has("states") && j.get("states").isObject()) {
                 for (JsonValue st = j.get("states").child; st != null; st = st.next) {
                     if (st.isNumber()) {
-                        joint.states.put(st.name.toLowerCase(), st.asFloat());
-                    } else if (st.isArray() && st.size > 0) {
-                        joint.states.put(st.name.toLowerCase(), st.get(0).isNull() ? 0f : st.getFloat(0));
+                        joint.states.put(st.name.toLowerCase(), new float[]{st.asFloat()});
+                    } else if (st.isArray()) {
+                        float[] vec = new float[st.size];
+                        for (int k = 0; k < st.size; k++) {
+                            vec[k] = st.get(k).isNull() ? 0f : st.getFloat(k);
+                        }
+                        joint.states.put(st.name.toLowerCase(), vec);
                     }
                 }
             }
         }
 
         AssetDef.PartDef partDef = new AssetDef.PartDef(
-                name, file, resolvedPath, size, offset, pivot, at, joint, slot, kind, mirror, modelId
+                name, file, resolvedPath, size, offset, pivot, at, joint, slot, kind, mirror, modelId,
+                partScale, emissive, anim
         );
+
+        // Per-part attaches
+        if (p.has("attach") && p.get("attach").isObject()) {
+            for (JsonValue attNode = p.get("attach").child; attNode != null; attNode = attNode.next) {
+                if (attNode.isObject()) {
+                    float[] posVec = attNode.has("pos") && attNode.get("pos").isArray() && attNode.get("pos").size >= 3
+                            ? new float[]{attNode.get("pos").getFloat(0), attNode.get("pos").getFloat(1), attNode.get("pos").getFloat(2)}
+                            : new float[3];
+                    float[] dirVec = attNode.has("dir") && attNode.get("dir").isArray() && attNode.get("dir").size >= 3
+                            ? new float[]{attNode.get("dir").getFloat(0), attNode.get("dir").getFloat(1), attNode.get("dir").getFloat(2)}
+                            : new float[3];
+                    partDef.attaches.put(attNode.name, new AssetDef.AttachDef(posVec, dirVec));
+                }
+            }
+        }
 
         // Visibility / Hidden-in
         if (p.has("hidden_in") && p.get("hidden_in").isArray()) {
@@ -262,37 +359,6 @@ public final class CustomAssetRegistry {
             }
         }
 
-        // Infer hidden states from top-level `states` object if present
-        if (states != null && states.isObject()) {
-            String partKey = name != null ? name : slot;
-            for (JsonValue st = states.child; st != null; st = st.next) {
-                String stateName = st.name.toLowerCase();
-                if (st.has("visible") && st.get("visible").isArray()) {
-                    boolean visibleInState = false;
-                    for (JsonValue v = st.get("visible").child; v != null; v = v.next) {
-                        String vName = v.asString();
-                        if ((partKey != null && partKey.equalsIgnoreCase(vName))
-                                || (slot != null && slot.equalsIgnoreCase(vName))
-                                || (name != null && name.equalsIgnoreCase(vName))
-                                || ("legs".equalsIgnoreCase(vName) && slot != null && (slot.contains("left") || slot.contains("right") || slot.contains("leg")))) {
-                            visibleInState = true;
-                            break;
-                        }
-                    }
-                    if (!visibleInState) {
-                        partDef.hiddenIn.add(stateName);
-                    }
-                }
-                if (st.has("legs") && !st.getBoolean("legs")) {
-                    if (slot != null && (slot.contains("left") || slot.contains("right") || slot.contains("leg"))) {
-                        partDef.hiddenIn.add(stateName);
-                    }
-                }
-                if (partKey != null && st.has(partKey) && st.get(partKey).isBoolean() && !st.getBoolean(partKey)) {
-                    partDef.hiddenIn.add(stateName);
-                }
-            }
-        }
 
         return partDef;
     }

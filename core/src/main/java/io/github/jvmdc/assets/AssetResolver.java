@@ -61,16 +61,25 @@ public final class AssetResolver {
         String stripped = raw.startsWith("custom.") ? raw.substring("custom.".length()) : raw;
         String dottedAsPath = stripped.replace('.', '/');
 
-        // Check custom_assets/
+        // 1. Check custom_assets/
         addCandidatesForRoot(paths, roots.custom, raw, stripped, dottedAsPath);
 
-        // Check assets/
+        // 2. Lookup in registry by part model_id or asset id
+        CustomAssetRegistry registry = CustomAssetRegistry.getInstance();
+        registry.getVoxForModelId(specifier).ifPresent(p -> {
+            if (!paths.contains(p)) paths.add(p);
+        });
+
+        // 3. Check assets/
         addCandidatesForRoot(paths, roots.assets, raw, stripped, dottedAsPath);
 
-        // Check source if present
+        // 4. Check source if present
         if (roots.source != null) {
             addCandidatesForRoot(paths, roots.source, raw, stripped, dottedAsPath);
         }
+
+        // Filter out any .json files so candidates NEVER return a .json file
+        paths.removeIf(p -> p.toString().toLowerCase().endsWith(".json"));
 
         return paths;
     }
@@ -94,15 +103,19 @@ public final class AssetResolver {
             if (!paths.contains(voxPath)) paths.add(voxPath);
         }
 
-        // 4. Category/asset/<asset>.json pattern
+        // 4. If raw starts with custom.voxel., convert custom.voxel. to voxel/
+        if (raw.startsWith("custom.voxel.")) {
+            String rawVox = raw.substring("custom.".length()).replace('.', '/') + ".vox";
+            Path customVoxPath = root.resolve(rawVox);
+            if (!paths.contains(customVoxPath)) paths.add(customVoxPath);
+        }
+
+        // 5. Category/asset/<asset>.vox pattern
         int dotIdx = stripped.indexOf('.');
         if (dotIdx > 0 && dotIdx < stripped.length() - 1) {
             String cat = stripped.substring(0, dotIdx);
             String asset = stripped.substring(dotIdx + 1);
             Path assetFolder = root.resolve(cat).resolve(asset);
-
-            Path jsonFile = assetFolder.resolve(asset + ".json");
-            if (!paths.contains(jsonFile)) paths.add(jsonFile);
 
             Path voxFile = assetFolder.resolve(asset + ".vox");
             if (!paths.contains(voxFile)) paths.add(voxFile);

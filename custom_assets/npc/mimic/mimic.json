@@ -83,7 +83,8 @@
       "file": "front_left.vox",
       "source_ref": "npc.mimic.front_left",
       "kind": "lateral",
-      "mirror": false
+      "mirror": false,
+      "hidden_in": ["closed_disguised"]
     },
     {
       "slot": "front_right",
@@ -95,7 +96,8 @@
       "file": "front_right.vox",
       "source_ref": "npc.mimic.front_right",
       "kind": "lateral",
-      "mirror": false
+      "mirror": false,
+      "hidden_in": ["closed_disguised"]
     },
     {
       "slot": "back_left",
@@ -107,7 +109,8 @@
       "file": "back_left.vox",
       "source_ref": "npc.mimic.back_left",
       "kind": "lateral",
-      "mirror": false
+      "mirror": false,
+      "hidden_in": ["closed_disguised"]
     },
     {
       "slot": "back_right",
@@ -119,7 +122,8 @@
       "file": "back_right.vox",
       "source_ref": "npc.mimic.back_right",
       "kind": "lateral",
-      "mirror": false
+      "mirror": false,
+      "hidden_in": ["closed_disguised"]
     }
   ],
   "skeleton_attr": {

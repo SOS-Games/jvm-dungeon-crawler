@@ -158,4 +158,16 @@ class CustomAssetTest {
         assertFalse(registry.has("trap.bad_trap"), "Bad asset should be skipped");
         assertEquals(1, registry.all().size());
     }
+
+    @Test
+    void mimicAssemblyGets6Parts() throws Exception {
+        AssetRoots roots = AssetRoots.locate();
+        var animals = io.github.jvmdc.viewer.NpcFigure.animals(roots.repo);
+        var mimic = animals.stream()
+                .filter(a -> "mimic".equalsIgnoreCase(a.name) || a.path.contains("mimic"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Mimic assembly not found in NpcFigure.animals()"));
+
+        assertEquals(6, mimic.parts.size(), "Mimic assembly should have exactly 6 bone-mapped parts (non-null file parts)");
+    }
 }

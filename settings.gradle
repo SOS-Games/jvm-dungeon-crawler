@@ -1,7 +1,4 @@
 plugins {
   id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
-if (file('../ashley-fork').exists()) {
-  includeBuild '../ashley-fork'
-}
 include 'lwjgl3', 'core', 'dungeon-gen'

@@ -174,6 +174,9 @@ public final class PropSpawner {
     private static float addRig(PropCatalog catalog, PropModel model, RigDef rig, String state) {
         float top = 1f;
         for (RigPart source : rig.parts) {
+            if (state != null && source.hiddenIn.contains(state.toLowerCase())) {
+                continue;
+            }
             ModelDef solid = catalog.models.get(source.model);
             float sz = solid == null ? 1f : solid.sz;
             float ox = solid == null ? 0f : solid.ox;

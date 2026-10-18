@@ -1,0 +1,104 @@
+{
+  "voxelsPerTile": 11,
+  "stairsClearance": 6,
+  "monsters": {
+    "batfox": {
+      "species": "batfox",
+      "body": "quadruped_small",
+      "levelMin": 1,
+      "levelMax": 1,
+      "groupMin": 1,
+      "groupMax": 1,
+      "hp_placeholder": 10,
+      "damage_placeholder": 2,
+      "speed_placeholder": 3
+    },
+    "frog": {
+      "species": "frog",
+      "body": "quadruped_small",
+      "levelMin": 1,
+      "levelMax": 1,
+      "groupMin": 1,
+      "groupMax": 1,
+      "hp_placeholder": 8,
+      "damage_placeholder": 2,
+      "speed_placeholder": 3
+    },
+    "boar": {
+      "species": "boar/male",
+      "body": "quadruped_small",
+      "levelMin": 1,
+      "levelMax": 1,
+      "groupMin": 1,
+      "groupMax": 1,
+      "hp_placeholder": 14,
+      "damage_placeholder": 4,
+      "speed_placeholder": 4
+    },
+    "cavespider": {
+      "species": "cavespider",
+      "body": "arthropod",
+      "levelMin": 1,
+      "levelMax": 1,
+      "groupMin": 1,
+      "groupMax": 3,
+      "hp_placeholder": 12,
+      "damage_placeholder": 3,
+      "speed_placeholder": 4
+    },
+    "wolf": {
+      "species": "wolf",
+      "body": "quadruped_medium",
+      "levelMin": 2,
+      "levelMax": 2,
+      "groupMin": 1,
+      "groupMax": 2,
+      "hp_placeholder": 18,
+      "damage_placeholder": 5,
+      "speed_placeholder": 5
+    },
+    "bear": {
+      "species": "bear",
+      "body": "quadruped_medium",
+      "levelMin": 2,
+      "levelMax": 2,
+      "groupMin": 1,
+      "groupMax": 1,
+      "hp_placeholder": 30,
+      "damage_placeholder": 8,
+      "speed_placeholder": 3
+    },
+    "troll": {
+      "species": "cavetroll",
+      "body": "biped_large",
+      "levelMin": 2,
+      "levelMax": 2,
+      "groupMin": 1,
+      "groupMax": 1,
+      "hp_placeholder": 45,
+      "damage_placeholder": 12,
+      "speed_placeholder": 2
+    }
+  },
+  "floors": [
+    {
+      "depth": 0,
+      "level": 1,
+      "weights": {
+        "batfox": 10,
+        "frog": 10,
+        "boar": 10
+      }
+    },
+    {
+      "depth": 2,
+      "level": 2,
+      "weights": {
+        "cavespider": 10,
+        "wolf": 10,
+        "bear": 10,
+        "troll": 5
+      }
+    }
+  ]
+}

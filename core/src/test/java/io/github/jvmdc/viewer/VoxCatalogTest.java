@@ -12,11 +12,11 @@ class VoxCatalogTest {
     void customVoxelsAreListed() throws Exception {
         List<VoxCatalog.Entry> entries = VoxCatalog.listFolder(AssetRoots.locate().custom, "assets/custom/");
         assertTrue(entries.stream().anyMatch(entry ->
-                entry.path.equals("assets/custom/voxel/trap/lever_base.vox") && entry.name.equals("lever_base")));
+                entry.path.endsWith("trap/lever/lever_base.vox") && entry.name.equals("lever_base")));
         assertTrue(entries.stream().anyMatch(entry ->
-                entry.path.equals("assets/custom/voxel/placement/altar.vox")));
+                entry.path.endsWith("placement/altar/altar.vox")));
         assertTrue(entries.stream().anyMatch(entry ->
-                entry.path.equals("assets/custom/voxel/item/spellbook/spellbook_plain.vox")));
+                entry.path.endsWith("item/spellbook/spellbook_plain.vox")));
         assertTrue(entries.stream().noneMatch(entry -> entry.path.endsWith(".json")));
     }
 }

@@ -34,7 +34,7 @@ public final class AssetRoots {
     static Path repoRoot(Path start) {
         Path dir = start;
         for (int i = 0; i < 5 && dir != null; i++) {
-            if (Files.isDirectory(dir.resolve("custom_assets"))) {
+            if (Files.isDirectory(dir.resolve("custom_assets")) || Files.isDirectory(dir.resolve("game_data"))) {
                 return dir;
             }
             dir = dir.getParent();
