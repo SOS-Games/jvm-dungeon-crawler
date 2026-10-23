@@ -75,7 +75,16 @@ public class VoxMesher {
     }
 
     public static VoxMesh build(VoxReader.VoxScene scene) {
-        Builder builder = new Builder(scene.palette);
+        return build(scene, null);
+    }
+
+    public static VoxMesh build(VoxReader.VoxScene scene, java.util.Map<Integer, int[]> paletteSwap) {
+        int[] palette = scene.palette;
+        if (paletteSwap != null && !paletteSwap.isEmpty() && scene.palette != null) {
+            palette = scene.palette.clone();
+            applyPaletteSwap(palette, paletteSwap);
+        }
+        Builder builder = new Builder(palette);
         for (VoxReader.VoxInstance instance : scene.instances) {
             if (instance.model < 0 || instance.model >= scene.models.size()) {
                 continue;
@@ -84,7 +93,12 @@ public class VoxMesher {
             if (model.grid == null) {
                 continue;
             }
-            builder.addModel(model, instance.rotation, instance.translation);
+            int[] modelPal = model.palette;
+            if (paletteSwap != null && !paletteSwap.isEmpty() && model.palette != null) {
+                modelPal = model.palette.clone();
+                applyPaletteSwap(modelPal, paletteSwap);
+            }
+            builder.addModel(model, modelPal, instance.rotation, instance.translation);
         }
         return builder.finish(true);
     }
@@ -148,6 +162,25 @@ public class VoxMesher {
         return GreedyMesh.build(voxels, sizeX, sizeY, sizeZ, rgbaBySlot, originX, originY, block, color);
     }
 
+    public static void applyPaletteSwap(int[] palette, java.util.Map<Integer, int[]> paletteSwap) {
+        if (palette == null || paletteSwap == null || paletteSwap.isEmpty()) {
+            return;
+        }
+        for (java.util.Map.Entry<Integer, int[]> entry : paletteSwap.entrySet()) {
+            int slot = entry.getKey();
+            if (slot >= 1 && slot <= palette.length) {
+                int[] rgb = entry.getValue();
+                if (rgb != null && rgb.length >= 3) {
+                    int r = rgb[0] & 0xFF;
+                    int g = rgb[1] & 0xFF;
+                    int b = rgb[2] & 0xFF;
+                    int a = rgb.length >= 4 ? (rgb[3] & 0xFF) : 0xFF;
+                    palette[slot - 1] = (r << 24) | (g << 16) | (b << 8) | a;
+                }
+            }
+        }
+    }
+
     /** Colour at a point in the chunk, packed as red, green, blue. */
     public interface VoxelColor {
         int at(float x, float y, float z);
@@ -205,11 +238,18 @@ public class VoxMesher {
         }
 
         void addModel(VoxReader.VoxModel model, float[] rotation, float[] translation) {
+            int[] colors = model.palette != null ? model.palette : palette;
+            addModel(model, colors, rotation, translation);
+        }
+
+        void addModel(VoxReader.VoxModel model, int[] colors, float[] rotation, float[] translation) {
             int sizeX = model.sizeX;
             int sizeY = model.sizeY;
             int sizeZ = model.sizeZ;
             byte[][][] grid = model.grid;
-            int[] colors = model.palette != null ? model.palette : palette;
+            if (colors == null) {
+                colors = palette;
+            }
             for (int x = 0; x < sizeX; x++) {
                 for (int y = 0; y < sizeY; y++) {
                     for (int z = 0; z < sizeZ; z++) {

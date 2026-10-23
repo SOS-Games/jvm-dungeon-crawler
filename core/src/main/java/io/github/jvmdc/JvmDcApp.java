@@ -606,7 +606,7 @@ public class JvmDcApp extends ApplicationAdapter {
                 trace.begin("palette");
                 try {
                     flyBuild.palette = BlockPalette.load(
-                            AssetRoots.locate().custom.resolve("manifest").resolve("block_palette.json"));
+                            AssetRoots.locate().repo.resolve("game_data").resolve("block_palette.json"));
                 } finally {
                     trace.end();
                 }

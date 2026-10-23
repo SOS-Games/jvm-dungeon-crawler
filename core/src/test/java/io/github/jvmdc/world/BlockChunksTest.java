@@ -149,7 +149,7 @@ class BlockChunksTest {
     }
 
     private static Path paletteFile() {
-        return AssetRoots.locate().custom.resolve("manifest").resolve("block_palette.json");
+        return AssetRoots.locate().repo.resolve("game_data").resolve("block_palette.json");
     }
 
     private static void assertNullKind(Kind kind) {

@@ -2,7 +2,9 @@ package io.github.jvmdc.viewer;
 
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import io.github.jvmdc.assets.AssetDef;
 import io.github.jvmdc.assets.AssetRoots;
+import io.github.jvmdc.assets.CustomAssetRegistry;
 import io.github.jvmdc.converter.VoxMesher;
 import io.github.jvmdc.converter.VoxReader;
 
@@ -21,29 +23,35 @@ import java.util.Set;
  * NPCs and animals are stored as separate voxel parts. The converted manifests
  * say which file each bone uses, and the idle pose stacks those bones into one body.
  */
-final class NpcFigure {
-    static final class Part {
-        final Path file;
-        final float ox, oy, oz;
-        final boolean mirror;
-        final String bone;
-        final boolean left;
+public final class NpcFigure {
+    public static final class Part {
+        public final Path file;
+        public final float ox, oy, oz;
+        public final boolean mirror;
+        public final String bone;
+        public final boolean left;
         /** Held weapon kind, such as Bow. Null for armor parts. */
-        final String tool;
+        public final String tool;
         /** Which model inside the file. Most parts are model 0. */
-        final int model;
+        public final int model;
+        public final Set<String> hiddenIn;
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left) {
-            this(file, ox, oy, oz, mirror, bone, left, null, 0);
+            this(file, ox, oy, oz, mirror, bone, left, null, 0, Set.of());
         }
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
              String tool) {
-            this(file, ox, oy, oz, mirror, bone, left, tool, 0);
+            this(file, ox, oy, oz, mirror, bone, left, tool, 0, Set.of());
         }
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
              String tool, int model) {
+            this(file, ox, oy, oz, mirror, bone, left, tool, model, Set.of());
+        }
+
+        Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
+             String tool, int model, Set<String> hiddenIn) {
             this.file = file;
             this.ox = ox;
             this.oy = oy;
@@ -53,18 +61,19 @@ final class NpcFigure {
             this.left = left;
             this.tool = tool;
             this.model = model;
+            this.hiddenIn = hiddenIn != null ? hiddenIn : Set.of();
         }
     }
 
-    static final class Assembly {
-        final String name;
-        final String path;
-        final String species;
+    public static final class Assembly {
+        public final String name;
+        public final String path;
+        public final String species;
         /** Body family such as bird_medium or biped_small. Null when this figure stays still. */
-        final String body;
-        final List<Part> parts;
+        public final String body;
+        public final List<Part> parts;
 
-        Assembly(String name, String path, String species, List<Part> parts, String body) {
+        public Assembly(String name, String path, String species, List<Part> parts, String body) {
             this.name = name;
             this.path = path;
             this.species = species;
@@ -88,7 +97,7 @@ final class NpcFigure {
     private NpcFigure() {
     }
 
-    static List<Assembly> find(Path assetsRoot) throws IOException {
+    public static List<Assembly> find(Path assetsRoot) throws IOException {
         Map<String, List<Part>> grouped = new LinkedHashMap<>();
         Map<String, String> itemToFolder = new LinkedHashMap<>();
         for (String[] manifest : MANIFESTS) {
@@ -275,7 +284,7 @@ final class NpcFigure {
      * Bears, birds, fish, and the other animals. Same manifests as the big bipeds,
      * with a left-side mirror where the mesh file is the right limb flipped.
      */
-    private static List<Assembly> animals(Path assetsRoot) throws IOException {
+    public static List<Assembly> animals(Path assetsRoot) throws IOException {
         String[][] manifests = {
                 {"quadruped_medium_central_manifest.json", "quadruped_medium_lateral_manifest.json", "qm"},
                 {"quadruped_small_central_manifest.json", "quadruped_small_lateral_manifest.json", "qs"},
@@ -325,6 +334,40 @@ final class NpcFigure {
                 String label = rust.replaceAll("([a-z])([A-Z])", "$1 $2").toLowerCase() + " " + sex;
                 assemblies.add(new Assembly(label, "assets/voxygen/voxel/npc/" + folder,
                         rust.toLowerCase() + "/" + sex, parts, family));
+            }
+        }
+        CustomAssetRegistry registry = CustomAssetRegistry.load(AssetRoots.locate());
+        for (AssetDef asset : registry.all().values()) {
+            if ("npc".equals(asset.category)) {
+                List<Part> parts = new ArrayList<>();
+                for (AssetDef.PartDef pDef : asset.parts) {
+                    if (pDef.file != null && pDef.resolvedPath != null && Files.isRegularFile(pDef.resolvedPath)) {
+                        parts.add(new Part(
+                                pDef.resolvedPath,
+                                pDef.offset[0], pDef.offset[1], pDef.offset[2],
+                                pDef.mirror,
+                                pDef.slot != null ? pDef.slot : "chest",
+                                pDef.slot != null && pDef.slot.contains("left"),
+                                null, 0, pDef.hiddenIn
+                        ));
+                    }
+                }
+                if (!parts.isEmpty()) {
+                    String species = asset.body != null && asset.body.species != null
+                            ? asset.body.species.toLowerCase()
+                            : asset.id.substring(asset.id.lastIndexOf('.') + 1);
+                    String name = asset.body != null && asset.body.species != null
+                            ? asset.body.species
+                            : species;
+                    String bodyFamily = asset.body != null ? asset.body.family : "quadruped_low";
+                    assemblies.add(new Assembly(
+                            name,
+                            asset.folder.toString().replace('\\', '/'),
+                            species,
+                            parts,
+                            bodyFamily
+                    ));
+                }
             }
         }
         return assemblies;

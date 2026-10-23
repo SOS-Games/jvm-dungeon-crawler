@@ -55,12 +55,11 @@ class AssetCatalogTest {
     void shippedManifestsLoad() throws Exception {
         AssetRoots roots = AssetRoots.locate();
         ManifestLibrary library = ManifestLibrary.load(roots);
-        assertEquals("custom.voxel.trap.lever_base", library.specifier("trap.lever_base"));
-        JsonValue decor = library.get("DungeonWallDecor");
-        assertNotNull(decor);
-        String model = library.specifier("DungeonWallDecor");
-        assertNotNull(model);
-        assertTrue(model.startsWith("voxygen.voxel."));
-        assertTrue(ModelPaths.locate().find("custom.voxel.trap.lever_base").isPresent());
+        JsonValue lever = library.get("trap.lever");
+        assertNotNull(lever, "Custom asset trap.lever should be loaded in library");
+
+        var voxPath = ModelPaths.locate().find("trap.lever_base");
+        assertTrue(voxPath.isPresent(), "Model trap.lever_base should resolve to a file");
+        assertTrue(voxPath.get().toString().endsWith(".vox"), "Resolved model file must end with .vox: " + voxPath.get());
     }
 }

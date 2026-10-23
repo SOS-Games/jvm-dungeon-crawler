@@ -11,9 +11,12 @@ public final class FigureLibrary {
     }
 
     public static boolean available(String species, String body) {
+        if (species == null || species.isBlank()) {
+            return false;
+        }
         try {
             return find(species, body) != null;
-        } catch (IOException e) {
+        } catch (IOException ignored) {
             return false;
         }
     }
