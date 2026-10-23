@@ -15,12 +15,10 @@ public final class FigureLibrary {
             return false;
         }
         try {
-            if (find(species, body) != null) {
-                return true;
-            }
+            return find(species, body) != null;
         } catch (IOException ignored) {
+            return false;
         }
-        return AnimalAttrs.get(body, species).length > 0 || "biped_large".equals(body) || "biped_small".equals(body);
     }
 
     /** Idle clip when the body has one. The rig is ready to draw. */

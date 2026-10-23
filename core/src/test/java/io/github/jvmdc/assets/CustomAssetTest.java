@@ -160,15 +160,59 @@ class CustomAssetTest {
     }
 
     @Test
-    void mimicAssemblyGets6Parts() throws Exception {
-        AssetRoots roots = AssetRoots.locate();
-        var animals = io.github.jvmdc.viewer.NpcFigure.animals(roots.repo);
-        var mimic = animals.stream()
-                .filter(a -> "mimic".equalsIgnoreCase(a.name) || a.path.contains("mimic"))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Mimic assembly not found in NpcFigure.animals()"));
+    void mimicLoadsThroughFigureLibrary() throws Exception {
+        var rig = io.github.jvmdc.viewer.FigureLibrary.load("mimic", "quadruped_low");
+        assertNotNull(rig, "Mimic rig should be loadable through FigureLibrary.load()");
+        assertTrue(rig instanceof io.github.jvmdc.viewer.AnimalIdle.Rig);
+        io.github.jvmdc.viewer.AnimalIdle.Rig animalRig = (io.github.jvmdc.viewer.AnimalIdle.Rig) rig;
+        assertEquals(6, animalRig.parts().size(), "Mimic rig should have 6 parts");
+    }
 
-        assertEquals(6, mimic.parts.size(), "Mimic assembly should have exactly 6 bone-mapped parts (non-null file parts)");
+    @Test
+    void mimicStateVisibility() throws Exception {
+        AssetRoots roots = AssetRoots.locate();
+        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
+        AssetDef mimicAsset = registry.get("npc.mimic").orElseThrow();
+
+        var closedAssembly = io.github.jvmdc.viewer.NpcFigure.buildAssembly(mimicAsset, "closed_disguised");
+        boolean closedHasLegs = closedAssembly.parts.stream().anyMatch(p -> p.file != null && p.file.getFileName().toString().contains("left"));
+        assertFalse(closedHasLegs, "Closed disguised state must hide legs");
+
+        var openAssembly = io.github.jvmdc.viewer.NpcFigure.buildAssembly(mimicAsset, "open_snarl");
+        boolean openHasLegs = openAssembly.parts.stream().anyMatch(p -> p.file != null && p.file.getFileName().toString().contains("left"));
+        assertTrue(openHasLegs, "Open snarl state must include legs");
+    }
+
+    @Test
+    void tonePalettesFiltering() throws Exception {
+        Path tempDir = Files.createTempDirectory("tone_test");
+        Path customAssets = tempDir.resolve("custom_assets");
+        Path catDir = customAssets.resolve("placement");
+        Path assetDir = catDir.resolve("test_tone");
+        Files.createDirectories(assetDir);
+
+        Path jsonFile = assetDir.resolve("test_tone.json");
+        Files.writeString(jsonFile, """
+                {
+                  "id": "placement.test_tone",
+                  "scale": 1.0,
+                  "palette": {
+                    "valid_stone": [100, 100, 100],
+                    "valid_multi": [[100, 100, 100], [150, 150, 150]],
+                    "invalid_string": "not_an_rgb_array",
+                    "invalid_object": { "key": "value" }
+                  }
+                }
+                """);
+
+        AssetRoots roots = new AssetRoots(tempDir, tempDir.resolve("assets"), customAssets, null);
+        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
+
+        AssetDef def = registry.get("placement.test_tone").orElseThrow();
+        assertTrue(def.tonePalettes.containsKey("valid_stone"), "Valid RGB array should be kept");
+        assertTrue(def.tonePalettes.containsKey("valid_multi"), "Valid array of RGB arrays should be kept");
+        assertFalse(def.tonePalettes.containsKey("invalid_string"), "Invalid string entry should be filtered out");
+        assertFalse(def.tonePalettes.containsKey("invalid_object"), "Invalid object entry should be filtered out");
     }
 
     @Test

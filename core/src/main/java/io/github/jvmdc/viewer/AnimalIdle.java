@@ -167,13 +167,19 @@ public final class AnimalIdle {
         spec.bones.put(manifestName, spec.bones.get(bone));
     }
 
-    static final class Part {
-        final VoxMesher.VoxMesh mesh;
-        final int bone;
+    public static final class Part {
+        public final VoxMesher.VoxMesh mesh;
+        public final int bone;
+        public final java.util.Set<String> hiddenIn;
 
-        Part(VoxMesher.VoxMesh mesh, int bone) {
+        public Part(VoxMesher.VoxMesh mesh, int bone) {
+            this(mesh, bone, java.util.Set.of());
+        }
+
+        public Part(VoxMesher.VoxMesh mesh, int bone, java.util.Set<String> hiddenIn) {
             this.mesh = mesh;
             this.bone = bone;
+            this.hiddenIn = hiddenIn != null ? hiddenIn : java.util.Set.of();
         }
     }
 
@@ -208,6 +214,10 @@ public final class AnimalIdle {
         private final String weapon;
         private final float gripX;
         private final float gripZ;
+
+        public List<Part> parts() {
+            return List.of(parts);
+        }
 
         Rig(Part[] parts, Spec spec, float[] attr, String species, String weapon, float gripX, float gripZ) {
             this.parts = parts;
@@ -256,11 +266,20 @@ public final class AnimalIdle {
             }
         }
 
+        public String state;
+
+        public void setState(String state) {
+            this.state = state;
+        }
+
         @Override
         public void draw(ForwardRenderer renderer, Camera camera, Matrix4 view) {
             compose();
             for (Part part : parts) {
                 if (part.mesh.parts.length == 0) {
+                    continue;
+                }
+                if (state != null && part.hiddenIn != null && part.hiddenIn.contains(state.toLowerCase())) {
                     continue;
                 }
                 draw.set(view).mul(ROOT_FIX).mul(recenter).mul(bones[part.bone]);
@@ -3894,7 +3913,7 @@ public final class AnimalIdle {
                 mesh.dispose();
                 continue;
             }
-            parts[n++] = new Part(mesh, bone);
+            parts[n++] = new Part(mesh, bone, part.hiddenIn);
         }
         if (n == 0) {
             return null;

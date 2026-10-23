@@ -25,27 +25,33 @@ import java.util.Set;
  */
 public final class NpcFigure {
     public static final class Part {
-        final Path file;
-        final float ox, oy, oz;
-        final boolean mirror;
-        final String bone;
-        final boolean left;
+        public final Path file;
+        public final float ox, oy, oz;
+        public final boolean mirror;
+        public final String bone;
+        public final boolean left;
         /** Held weapon kind, such as Bow. Null for armor parts. */
-        final String tool;
+        public final String tool;
         /** Which model inside the file. Most parts are model 0. */
-        final int model;
+        public final int model;
+        public final Set<String> hiddenIn;
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left) {
-            this(file, ox, oy, oz, mirror, bone, left, null, 0);
+            this(file, ox, oy, oz, mirror, bone, left, null, 0, Set.of());
         }
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
              String tool) {
-            this(file, ox, oy, oz, mirror, bone, left, tool, 0);
+            this(file, ox, oy, oz, mirror, bone, left, tool, 0, Set.of());
         }
 
         Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
              String tool, int model) {
+            this(file, ox, oy, oz, mirror, bone, left, tool, model, Set.of());
+        }
+
+        Part(Path file, float ox, float oy, float oz, boolean mirror, String bone, boolean left,
+             String tool, int model, Set<String> hiddenIn) {
             this.file = file;
             this.ox = ox;
             this.oy = oy;
@@ -55,6 +61,7 @@ public final class NpcFigure {
             this.left = left;
             this.tool = tool;
             this.model = model;
+            this.hiddenIn = hiddenIn != null ? hiddenIn : Set.of();
         }
     }
 
@@ -329,10 +336,7 @@ public final class NpcFigure {
                         rust.toLowerCase() + "/" + sex, parts, family));
             }
         }
-        AssetRoots roots = assetsRoot != null
-                ? new AssetRoots(assetsRoot, assetsRoot.resolve("assets"), assetsRoot.resolve("custom_assets"), null)
-                : AssetRoots.locate();
-        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
+        CustomAssetRegistry registry = CustomAssetRegistry.load(AssetRoots.locate());
         for (AssetDef asset : registry.all().values()) {
             if ("npc".equals(asset.category)) {
                 List<Part> parts = new ArrayList<>();
@@ -343,7 +347,8 @@ public final class NpcFigure {
                                 pDef.offset[0], pDef.offset[1], pDef.offset[2],
                                 pDef.mirror,
                                 pDef.slot != null ? pDef.slot : "chest",
-                                pDef.slot != null && pDef.slot.contains("left")
+                                pDef.slot != null && pDef.slot.contains("left"),
+                                null, 0, pDef.hiddenIn
                         ));
                     }
                 }

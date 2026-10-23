@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 /**
  * Scans custom asset folders at startup and parses each definition into an AssetDef.
- * Custom IDs replace base/Veloren IDs with the same key. Malformed files are logged and skipped.
+ * Custom IDs replace base/converted base IDs with the same key. Malformed files are logged and skipped.
  */
 public final class CustomAssetRegistry {
     private static CustomAssetRegistry instance;
@@ -176,7 +176,7 @@ public final class CustomAssetRegistry {
             // Tone palettes in palette object (e.g. stone, wood, metal, water, candle, offering)
             if (root.has("palette") && root.get("palette").isObject()) {
                 for (JsonValue child = root.get("palette").child; child != null; child = child.next) {
-                    if (child.isArray() || child.isObject()) {
+                    if (isTonePaletteValue(child)) {
                         def.tonePalettes.put(child.name, child);
                     }
                 }
@@ -418,17 +418,32 @@ public final class CustomAssetRegistry {
         return paletteDef;
     }
 
+    private static boolean isRgbArray(JsonValue val) {
+        return val != null && val.isArray() && val.size == 3
+                && val.get(0).isNumber() && val.get(1).isNumber() && val.get(2).isNumber();
+    }
+
+    private static boolean isTonePaletteValue(JsonValue val) {
+        if (val == null || !val.isArray()) {
+            return false;
+        }
+        if (isRgbArray(val)) {
+            return true;
+        }
+        if (val.size == 0) {
+            return false;
+        }
+        for (JsonValue elem = val.child; elem != null; elem = elem.next) {
+            if (!isRgbArray(elem)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static float[] parseSkeletonAttr(JsonValue skel) {
         if (skel == null) {
             return null;
-        }
-        if (skel.has("_flat_array_used_in_test") && skel.get("_flat_array_used_in_test").isArray()) {
-            JsonValue arr = skel.get("_flat_array_used_in_test");
-            float[] res = new float[arr.size];
-            for (int i = 0; i < arr.size; i++) {
-                res[i] = arr.getFloat(i);
-            }
-            return res;
         }
         if (skel.isArray()) {
             float[] res = new float[skel.size];

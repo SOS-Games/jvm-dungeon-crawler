@@ -40,8 +40,8 @@ Every asset folder contains exactly one JSON definition named after the folder (
 
 ## Asset Overrides & Resolution
 
-1. **Resolution Precedence**: `AssetResolver` checks `custom_assets/` first before falling back to converted Veloren assets.
-2. **Registry Overrides**: At startup, `CustomAssetRegistry` scans all asset definitions under `custom_assets/*/*/<folder>.json`. Custom IDs replace base/Veloren IDs with the same name.
+1. **Resolution Precedence**: `AssetResolver` checks `custom_assets/` first before falling back to converted base assets.
+2. **Registry Overrides**: At startup, `CustomAssetRegistry` scans all asset definitions under `custom_assets/*/*/<folder>.json`. Custom IDs replace base/converted base IDs with the same name.
 3. **Error Handling**: Malformed or unparseable JSON files are logged and skipped rather than causing startup crashes.
 
 ---

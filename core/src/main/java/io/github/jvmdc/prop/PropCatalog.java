@@ -77,7 +77,8 @@ public final class PropCatalog {
         }
 
         // Rig
-        if (asset.parts.size() >= 2) {
+        boolean isTrapOrPlacement = "trap".equalsIgnoreCase(asset.category) || "placement".equalsIgnoreCase(asset.category);
+        if (asset.parts.size() >= 2 && isTrapOrPlacement) {
             RigDef rig = new RigDef();
             rig.id = asset.id;
             for (AssetDef.PartDef p : asset.parts) {
@@ -105,10 +106,6 @@ public final class PropCatalog {
             }
             rigs.put(asset.id, rig);
             rigs.put(leafName, rig);
-            if ("trap.spike_trap".equals(asset.id)) {
-                rigs.put("trap.spikes", rig);
-                rigs.put("spikes", rig);
-            }
         }
 
         // Placeable
@@ -181,11 +178,6 @@ public final class PropCatalog {
             return model.vox;
         }
         String specifier = library.specifier(modelId);
-        if (specifier == null || specifier.isEmpty()) {
-            if ("Door".equals(modelId)) return "voxygen.voxel.sprite.door.door-0";
-            if ("Chest".equals(modelId)) return "voxygen.voxel.sprite.chest.chest-0";
-            if ("WallSconce".equals(modelId)) return "voxygen.voxel.sprite.sconce.sconce-0";
-        }
         return specifier == null ? "" : specifier;
     }
 

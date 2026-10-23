@@ -67,7 +67,7 @@ class MonsterSpawnTest {
         }
         assertTrue(floor0.contains("boar") || floor0.contains("batfox") || floor0.contains("frog"));
         assertTrue(Set.of("batfox", "frog", "boar", "cavespider").containsAll(floor0), floor0.toString());
-        assertTrue(Set.of("cavespider", "wolf", "bear", "troll").containsAll(floor2), floor2.toString());
+        assertTrue(Set.of("wolf", "bear", "troll").containsAll(floor2), floor2.toString());
     }
 
     @Test

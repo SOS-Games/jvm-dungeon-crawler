@@ -7,7 +7,7 @@ eclipse.project.name = appName + '-core'
 dependencies {
   api project(':dungeon-gen')
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
-  api 'com.github.SOS-Games:ashley:v1.7.4-sos.1'
+  api 'io.github.sosgames:ashley:1.7.4-sos.1'
   api "com.badlogicgames.gdx:gdx-bullet:$gdxVersion"
   implementation "org.recast4j:recast:1.5.7"
   implementation "org.recast4j:detour:1.5.7"
