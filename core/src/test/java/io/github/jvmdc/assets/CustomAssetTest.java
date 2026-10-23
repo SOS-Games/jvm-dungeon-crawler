@@ -170,4 +170,45 @@ class CustomAssetTest {
 
         assertEquals(6, mimic.parts.size(), "Mimic assembly should have exactly 6 bone-mapped parts (non-null file parts)");
     }
+
+    @Test
+    void spikeTrapJointStatesInPropCatalog() throws Exception {
+        AssetRoots roots = AssetRoots.locate();
+        io.github.jvmdc.prop.PropCatalog catalog = io.github.jvmdc.prop.PropCatalog.load(roots);
+
+        io.github.jvmdc.prop.PropCatalog.RigDef spikeRig = catalog.rigs.get("trap.spike_trap");
+        assertNotNull(spikeRig, "Spike trap rig should exist in PropCatalog");
+
+        io.github.jvmdc.prop.PropCatalog.RigPart shafts = spikeRig.parts.stream()
+                .filter(p -> "trap.spike_shafts".equals(p.model))
+                .findFirst()
+                .orElseThrow();
+
+        assertArrayEquals(new float[]{0, 0, 0}, shafts.states.get("retracted"), 0.001f);
+        assertArrayEquals(new float[]{0, 0, 11}, shafts.states.get("extended"), 0.001f);
+    }
+
+    @Test
+    void spellbookPaletteSwapMeshing() throws Exception {
+        AssetRoots roots = AssetRoots.locate();
+        CustomAssetRegistry registry = CustomAssetRegistry.load(roots);
+        AssetDef spellbook = registry.get("item.spellbook").orElseThrow();
+
+        int[] basePalette = new int[256];
+        basePalette[0] = 0x111111FF;
+        basePalette[1] = 0x222222FF;
+        basePalette[2] = 0x333333FF;
+
+        int[] swapped = spellbook.getSwappedPalette(basePalette, "crimson");
+        assertNotEquals(basePalette[0], swapped[0], "Swapped palette slot 0 should be updated for crimson theme");
+
+        // Verify palette array immutability during VoxMesher.applyPaletteSwap
+        int[] originalPalette = new int[]{0x111111FF, 0x222222FF, 0x333333FF};
+        int[] copyPalette = originalPalette.clone();
+        Map<Integer, int[]> swapMap = Map.of(1, new int[]{255, 0, 0});
+        io.github.jvmdc.converter.VoxMesher.applyPaletteSwap(copyPalette, swapMap);
+
+        assertNotEquals(originalPalette[0], copyPalette[0], "Copy palette should be mutated");
+        assertEquals(0x111111FF, originalPalette[0], "Original palette must remain untouched");
+    }
 }

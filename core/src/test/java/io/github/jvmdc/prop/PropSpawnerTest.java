@@ -110,7 +110,6 @@ class PropSpawnerTest {
                 chests--;
             }
         }
-        System.out.println("BEFORE CHEST ASSERTION: chests=" + chests + " seed=" + seed);
         assertEquals(0, chests, "seed " + seed);
         assertTrue(lights >= placedLights, "seed " + seed);
         assertTrue(rig, "seed " + seed);

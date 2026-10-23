@@ -79,15 +79,12 @@ public class VoxMesher {
     }
 
     public static VoxMesh build(VoxReader.VoxScene scene, java.util.Map<Integer, int[]> paletteSwap) {
-        if (paletteSwap != null && !paletteSwap.isEmpty()) {
-            applyPaletteSwap(scene.palette, paletteSwap);
-            for (VoxReader.VoxModel model : scene.models) {
-                if (model.palette != null) {
-                    applyPaletteSwap(model.palette, paletteSwap);
-                }
-            }
+        int[] palette = scene.palette;
+        if (paletteSwap != null && !paletteSwap.isEmpty() && scene.palette != null) {
+            palette = scene.palette.clone();
+            applyPaletteSwap(palette, paletteSwap);
         }
-        Builder builder = new Builder(scene.palette);
+        Builder builder = new Builder(palette);
         for (VoxReader.VoxInstance instance : scene.instances) {
             if (instance.model < 0 || instance.model >= scene.models.size()) {
                 continue;
@@ -96,7 +93,12 @@ public class VoxMesher {
             if (model.grid == null) {
                 continue;
             }
-            builder.addModel(model, instance.rotation, instance.translation);
+            int[] modelPal = model.palette;
+            if (paletteSwap != null && !paletteSwap.isEmpty() && model.palette != null) {
+                modelPal = model.palette.clone();
+                applyPaletteSwap(modelPal, paletteSwap);
+            }
+            builder.addModel(model, modelPal, instance.rotation, instance.translation);
         }
         return builder.finish(true);
     }
@@ -236,11 +238,18 @@ public class VoxMesher {
         }
 
         void addModel(VoxReader.VoxModel model, float[] rotation, float[] translation) {
+            int[] colors = model.palette != null ? model.palette : palette;
+            addModel(model, colors, rotation, translation);
+        }
+
+        void addModel(VoxReader.VoxModel model, int[] colors, float[] rotation, float[] translation) {
             int sizeX = model.sizeX;
             int sizeY = model.sizeY;
             int sizeZ = model.sizeZ;
             byte[][][] grid = model.grid;
-            int[] colors = model.palette != null ? model.palette : palette;
+            if (colors == null) {
+                colors = palette;
+            }
             for (int x = 0; x < sizeX; x++) {
                 for (int y = 0; y < sizeY; y++) {
                     for (int z = 0; z < sizeZ; z++) {

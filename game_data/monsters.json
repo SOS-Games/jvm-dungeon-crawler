@@ -39,7 +39,7 @@
       "species": "cavespider",
       "body": "arthropod",
       "levelMin": 1,
-      "levelMax": 1,
+      "levelMax": 2,
       "groupMin": 1,
       "groupMax": 3,
       "hp_placeholder": 12,
